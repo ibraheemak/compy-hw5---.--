@@ -262,12 +262,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
       // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
       
-       if($2->op=="+"){
-        $$=emitArithmetic("add",$1,$3)
+       if(static_cast<Binop*>($2)->op=="+"){
+        $$=emitArithmetic("add",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        }
 
-       if($2->op=="-"){
-        $$=emitArithmetic("sub",$1,$3)
+       if(static_cast<Binop*>($2)->op=="-"){
+        $$=emitArithmetic("sub",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        }
 
        global_exp_type=$$->type;
@@ -282,12 +282,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
       // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
 
-       if($2->op=="*"){
-        $$=emitArithmetic("mul",$1,$3)
+       if(static_cast<Binop*>($2)->op=="*"){
+        $$=emitArithmetic("mul",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        }
        
-       if($2->op=="/"){
-        $$=emitDivision($1,$3)
+       if(static_cast<Binop*>($2)->op=="/"){
+        $$=emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        }
 
        global_exp_type=$$->type;

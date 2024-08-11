@@ -68,7 +68,7 @@ if (le->type == "byte" && re->type == "byte") {
 void checkDivisionByZero(ExpNode* exp) { // it will be done at runtime
     string checkZero =freshVar();
     string exp_llvm_type=getLLVMType(exp->type);
-    CodeBuffer::instance().emit(checkZero + " = icmp eq " + exp_llvm_type + " " exp->llvm_Var + ", 0");
+    CodeBuffer::instance().emit(checkZero + " = icmp eq " + exp_llvm_type + " " + exp->llvm_var + ", 0");
 
     string label_Zero = CodeBuffer::instance().freshLabel();
     string label_notZero = CodeBuffer::instance().freshLabel();

@@ -23,8 +23,10 @@ string getLLVMType(const string& type) { // i8 or i32
     } else if (type == "byte") {
         return "i8";
     }
+    return "bug at getLLVMType";
 }
 
+//_________________________________________arethmitics_________________________________________
 
 string promoteByteToInt(ExpNode* byteNode) {
     string intVar = freshVar();
@@ -110,11 +112,101 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 }
 
 
+//_________________________________________boolean_________________________________________
+
+ExpNode* emitBooleanOr(ExpNode* le, ExpNode* re) {
+    string resultVar = freshVar();
+    string labe_leIsTrue = CodeBuffer::instance().freshLabel();
+    string label_leIsFalse = CodeBuffer::instance().freshLabel();
+    string labelEnd = CodeBuffer::instance().freshLabel();
+
+    // Check if the left expression is true
+    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labe_leIsTrue + ", label %" + label_leIsFalse);
+
+    // If true, short-circuit to the end
+    CodeBuffer::instance().emit(labe_leIsTrue + ":");
+    CodeBuffer::instance().emit(resultVar + " = i1 1");
+    CodeBuffer::instance().emit("br label %" + labelEnd);
+
+    // Evaluate the right expression if left is false
+    CodeBuffer::instance().emit(label_leIsFalse + ":");
+    CodeBuffer::instance().emit(resultVar + " = i1 " + re->llvm_var);
+    CodeBuffer::instance().emit("br label %" + labelEnd);
+
+    // End label
+    CodeBuffer::instance().emit(labelEnd + ":");
+
+    return new ExpNode("bool", resultVar);
+}
+
+ExpNode* emitBooleanAnd(ExpNode* le, ExpNode* re) {
+    string resultVar = freshVar();
+    string label_leIsFalse = CodeBuffer::instance().freshLabel();
+    string labe_leIsTrue = CodeBuffer::instance().freshLabel();
+    string labelEnd = CodeBuffer::instance().freshLabel();
+
+    // Check if the left expression is false
+    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labe_leIsTrue + ", label %" + label_leIsFalse);
+
+    // If false, short-circuit to the end
+    CodeBuffer::instance().emit(label_leIsFalse + ":");
+    CodeBuffer::instance().emit(resultVar + " = i1 0");
+    CodeBuffer::instance().emit("br label %" + labelEnd);
+
+    // Evaluate the right expression if left is true
+    CodeBuffer::instance().emit(labe_leIsTrue + ":");
+    CodeBuffer::instance().emit(resultVar + " = i1 " + re->llvm_var);
+    CodeBuffer::instance().emit("br label %" + labelEnd);
+
+    // End label
+    CodeBuffer::instance().emit(labelEnd + ":");
+
+    return new ExpNode("bool", resultVar);
+}
+
+ExpNode* emitBooleanNot(ExpNode* exp) {
+    string resultVar = freshVar();
+    CodeBuffer::instance().emit(resultVar + " = xor i1 " + exp->llvm_var + ", 1");
+    return new ExpNode("bool", resultVar);
+}
 
 
+ExpNode* emitRelop(const string& relop, ExpNode* le, ExpNode* re) {
+    string resultVar = freshVar();
+    string leVar = le->llvm_var;
+    string reVar = re->llvm_var;
+    string llvmRelop;
 
+    if (le->type == "byte") {
+        leVar = promoteByteToInt(le);  
+    }
+    if (re->type == "byte") {
+        reVar = promoteByteToInt(re);
+    }
 
+    // Determine the appropriate LLVM relational operation
+    if (relop == "==") {
+        llvmRelop = "eq";
+    } else if (relop == "!=") {
+        llvmRelop = "ne";
+    } else if (relop == "<") {
+        llvmRelop = "slt";
+    } else if (relop == "<=") {
+        llvmRelop = "sle";
+    } else if (relop == ">") {
+        llvmRelop = "sgt";
+    } else if (relop == ">=") {
+        llvmRelop = "sge";
+    } else {
+        output::errorMismatch(yylineno); //just for debugging
+        exit(0);
+    }
 
+    CodeBuffer::instance().emit(resultVar + " = icmp " + llvmRelop + " i32 " + leVar + ", " + reVar);
+    return new ExpNode("bool", resultVar);
+}
+
+//_________________________________________if_________________________________________
 
 
 #endif

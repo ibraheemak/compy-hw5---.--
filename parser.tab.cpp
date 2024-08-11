@@ -1591,7 +1591,7 @@ yyreduce:
 #line 323 "parser.ypp"
      { 
        checkBooleanExpression(yyvsp[0], *tableStack);
-       yyval = new ExpNode("bool");
+       yyval = emitBooleanNot(static_cast<ExpNode*>(yyvsp[0]));
        printProductionRule(28);
        global_exp_type=yyval->type;
      }
@@ -1603,7 +1603,7 @@ yyreduce:
      { 
        checkBooleanExpression(yyvsp[-2], *tableStack);
        checkBooleanExpression(yyvsp[0], *tableStack);
-       yyval = new ExpNode("bool");
+       yyval =emitBooleanAnd(static_cast<ExpNode*>(yyvsp[-2]),static_cast<ExpNode*>(yyvsp[0]));
        printProductionRule(29);
        global_exp_type=yyval->type;
      }
@@ -1615,7 +1615,7 @@ yyreduce:
      { 
        checkBooleanExpression(yyvsp[-2], *tableStack);
        checkBooleanExpression(yyvsp[0], *tableStack);
-       yyval = new ExpNode("bool");
+       yyval =emitBooleanOr(static_cast<ExpNode*>(yyvsp[-2]),static_cast<ExpNode*>(yyvsp[0]));
        printProductionRule(30);
        global_exp_type=yyval->type;
      }
@@ -1626,7 +1626,7 @@ yyreduce:
 #line 346 "parser.ypp"
      { 
        checkTypeMismatch(yyvsp[-2]->type, yyvsp[0]->type, "equality", yylineno);
-       yyval = new ExpNode("bool");
+       yyval = emitRelop(static_cast<Relop*>(yyvsp[-1])->op, static_cast<ExpNode*>(yyvsp[-2]),static_cast<ExpNode*>(yyvsp[0]));
        printProductionRule(31);
        global_exp_type=yyval->type;
      }
@@ -1638,7 +1638,7 @@ yyreduce:
      { 
        checkNumericExpression(yyvsp[-2], *tableStack);
        checkNumericExpression(yyvsp[0], *tableStack);
-       yyval = new ExpNode("bool");
+       yyval = emitRelop(static_cast<Relop*>(yyvsp[-1])->op, static_cast<ExpNode*>(yyvsp[-2]),static_cast<ExpNode*>(yyvsp[0]));
        printProductionRule(31);
        global_exp_type=yyval->type;
      }

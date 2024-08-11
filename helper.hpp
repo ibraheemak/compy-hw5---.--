@@ -114,7 +114,8 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 
 //_________________________________________boolean_________________________________________
 
-ExpNode* emitBooleanOr(ExpNode* le, ExpNode* re) {
+void emitBooleanOr(ExpNode* le, ExpNode* re) {
+    /*
     string resultVar = freshVar();
     string labe_leIsTrue = CodeBuffer::instance().freshLabel();
     string label_leIsFalse = CodeBuffer::instance().freshLabel();
@@ -137,9 +138,20 @@ ExpNode* emitBooleanOr(ExpNode* le, ExpNode* re) {
     CodeBuffer::instance().emit(labelEnd + ":");
 
     return new ExpNode("bool", resultVar);
+    */
+
+
+    CodeBuffer::instance().emit("br i1"+ le->llvm_var + ", label %" + le->true_label + ", label %" + le->false_label);
+
+    // Emit the false label for the left expression and check the right expression
+    CodeBuffer::instance().emit(le->false_label + ":");
+
+    CodeBuffer::instance().emit("br i1"+ re->llvm_var + ", label %" + re->true_label + ", label %" + re->false_label);
+
 }
 
-ExpNode* emitBooleanAnd(ExpNode* le, ExpNode* re) {
+void emitBooleanAnd(ExpNode* le, ExpNode* re) {
+    /*
     string resultVar = freshVar();
     string label_leIsFalse = CodeBuffer::instance().freshLabel();
     string labe_leIsTrue = CodeBuffer::instance().freshLabel();
@@ -162,6 +174,13 @@ ExpNode* emitBooleanAnd(ExpNode* le, ExpNode* re) {
     CodeBuffer::instance().emit(labelEnd + ":");
 
     return new ExpNode("bool", resultVar);
+    */
+
+    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + le->true_label + ", label %" + le->false_label);
+
+    // Emit the true label for the left expression to evaluate the right expression
+    CodeBuffer::instance().emit(le->true_label + ":");
+    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + re->true_label + ", label %" + re->false_label);
 }
 
 ExpNode* emitBooleanNot(ExpNode* exp) {

@@ -16,6 +16,8 @@
     #define YYERROR_VERBOSE 1 
     /* //for tests:  #define YYDEBUG 1 */
     string global_exp_type = "";
+    ExpNode* global_Exp = nullptr;
+    string global_label="";
     #include "cg.hpp"
     #include "helper.hpp"
 %}
@@ -123,19 +125,20 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            checkReturnStatement(*tableStack, "void", yylineno);
            printProductionRule(9);
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL M_NEW_SCOPE Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
-         
+           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
            printProductionRule(10);
            delete $3;
            
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE1 Statement CLOSE_SCOPE
          {
+           CodeBuffer::instance().emit(global_label +":");
            printProductionRule(11);
            delete $3;
          }
-         | WHILE LPAREN Exp RPAREN M_CHECK_IF_BOOL M_NEW_SCOPE_LOOP Statement
+         | WHILE LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE_LOOP Statement
          {
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
@@ -160,6 +163,13 @@ CLOSE_SCOPE: %empty
              offsettStack->pop_offset(yylineno);
            };
 
+CLOSE_SCOPE1: %empty
+           {
+             CodeBuffer::instance().emit("br label %" + global_label);
+             exitScope(*tableStack);
+             offsettStack->pop_offset(yylineno);
+           };
+
 M_NEW_SCOPE: %empty
            {
              createNewScope(*tableStack);
@@ -174,12 +184,14 @@ M_NEW_SCOPE_LOOP: %empty
                   loopDepth++;
                 }
                 ;
-M_CHECK_IF_BOOL: %empty
+M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                 {
                   if (!isBooleanType(global_exp_type)) {
                    output::errorMismatch(yylineno);
                    exit(0);
                   }
+                  CodeBuffer::instance().emit(global_Exp->true_label + ":");
+
                 };
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -251,7 +263,7 @@ Type: INT { $$=new TNode("int"); printProductionRule(16); }
     | BOOL { $$=new TNode("bool"); printProductionRule(18); };
 
 
-Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->type;}
+Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->type; global_Exp=dynamic_cast<ExpNode*>($$);}
    | Exp additive Exp 
      { 
        checkNumericExpression($1, *tableStack);
@@ -271,6 +283,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        }
 
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
 
      }
    | Exp multiplicative Exp 
@@ -291,6 +304,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        }
 
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | ID 
      { 
@@ -302,9 +316,10 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        $$ = new ExpNode(type);
        printProductionRule(21);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
-   | Call { $$ = $1; printProductionRule(22);global_exp_type=$$->type;}
-   | NUM { $$ = new ExpNode("int"); printProductionRule(23);global_exp_type=$$->type;}
+   | Call { $$ = $1; printProductionRule(22);global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | NUM { $$ = new ExpNode("int"); printProductionRule(23);global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | NUM B 
      { 
        int value = static_cast<Num*>($1)->num;
@@ -315,32 +330,44 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        $$ = new ExpNode("byte");
        printProductionRule(24);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
-   | STRING { $$ = new ExpNode("string");printProductionRule(25); global_exp_type=$$->type;}
-   | TRUE { $$ = new ExpNode("bool"); global_exp_type=$$->type;}
-   | FALSE { $$ = new ExpNode("bool"); global_exp_type=$$->type;}
+   | STRING { $$ = new ExpNode("string");printProductionRule(25); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | TRUE { $$ = new ExpNode("bool"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | FALSE { $$ = new ExpNode("bool"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | NOT Exp 
      { 
        checkBooleanExpression($2, *tableStack);
        $$ = emitBooleanNot(static_cast<ExpNode*>($2));
        printProductionRule(28);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | Exp AND Exp 
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       $$ =emitBooleanAnd(static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
+       emitBooleanAnd(dynamic_cast<ExpNode*>($1),dynamic_cast<ExpNode*>($3));
+       $$ = new ExpNode("bool");
+       static_cast<ExpNode*>($$)->true_label=static_cast<ExpNode*>($3)->true_label;
+       static_cast<ExpNode*>($$)->false_label=static_cast<ExpNode*>($3)->false_label;
+
        printProductionRule(29);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | Exp OR Exp 
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       $$ =emitBooleanOr(static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
+       emitBooleanOr(dynamic_cast<ExpNode*>($1),dynamic_cast<ExpNode*>($3));
+       $$ = new ExpNode("bool");
+       static_cast<ExpNode*>($$)->true_label=static_cast<ExpNode*>($3)->true_label;
+       static_cast<ExpNode*>($$)->false_label=static_cast<ExpNode*>($3)->false_label;
+
        printProductionRule(30);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | Exp equality Exp 
      { 
@@ -348,6 +375,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(31);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | Exp relational Exp 
      { 
@@ -356,6 +384,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(31);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | LPAREN Type RPAREN Exp 
      { 
@@ -371,6 +400,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        $$ = new ExpNode(targetType);
        printProductionRule(32);
        global_exp_type=$$->type;
+       global_Exp=dynamic_cast<ExpNode*>($$);
      }
    ;
     // Exp: LPAREN Exp RPAREN{printProductionRule(19);}

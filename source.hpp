@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "cg.hpp"
 using namespace std;
 
 class TNode {
@@ -32,8 +33,16 @@ public:
 class BoolLex : public TNode {
 public:
     bool boolean;
-    BoolLex(const string &type, bool boolean) : TNode(type), boolean(boolean) {}
-    BoolLex(const string &type, bool boolean,const string &llvm_var) : TNode(type,llvm_var), boolean(boolean) {}
+    string true_label;
+    string false_label;
+    BoolLex(const string &type, bool boolean) : TNode(type,""), boolean(boolean){
+        true_label=CodeBuffer::instance().freshLabel();
+        false_label=CodeBuffer::instance().freshLabel();
+    }
+    BoolLex(const string &type, bool boolean,const string &llvm_var) : TNode(type,llvm_var), boolean(boolean) {
+        true_label=CodeBuffer::instance().freshLabel();
+        false_label=CodeBuffer::instance().freshLabel();
+    }
 };
 
 class StringLex : public TNode {
@@ -59,8 +68,17 @@ public:
 
 class ExpNode : public TNode {
 public:
-    ExpNode(const string &type) : TNode(type) {}
-    ExpNode(const string &type,const string &llvm_var) : TNode(type,llvm_var) {}
+    string true_label;
+    string false_label;
+    
+    ExpNode(const string &type) : TNode(type) {
+         true_label=CodeBuffer::instance().freshLabel();
+        false_label=CodeBuffer::instance().freshLabel();
+    }
+    ExpNode(const string &type,const string &llvm_var) : TNode(type,llvm_var) {
+        true_label=CodeBuffer::instance().freshLabel();
+        false_label=CodeBuffer::instance().freshLabel();
+    }
 };
 
 class StmtNode : public TNode {

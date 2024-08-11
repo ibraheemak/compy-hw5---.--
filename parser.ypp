@@ -17,6 +17,7 @@
     /* //for tests:  #define YYDEBUG 1 */
     string global_exp_type = "";
     #include "cg.hpp"
+    #include "helper.hpp"
 %}
 
 
@@ -255,21 +256,40 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkNumericExpression($1, *tableStack);
        checkNumericExpression($3, *tableStack);
-       string type1 = $1->type;
-       string type2 = $3->type;
-       //for tests: cout << type1 <<endl;
-       $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
+      // string type1 = $1->type;
+      // string type2 = $3->type;
+      //for tests: cout << type1 <<endl;
+      // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
+      
+       if($2->op=="+"){
+        $$=emitArithmetic("add",$1,$3)
+       }
+
+       if($2->op=="-"){
+        $$=emitArithmetic("sub",$1,$3)
+       }
+
        global_exp_type=$$->type;
+
      }
    | Exp multiplicative Exp 
      { 
        checkNumericExpression($1, *tableStack);
        checkNumericExpression($3, *tableStack);
-       string type1 = $1->type;
-       string type2 = $3->type;
-       $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
+      // string type1 = $1->type;
+      // string type2 = $3->type;
+      // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
+
+       if($2->op=="*"){
+        $$=emitArithmetic("mul",$1,$3)
+       }
+       
+       if($2->op=="/"){
+        $$=emitDivision($1,$3)
+       }
+
        global_exp_type=$$->type;
      }
    | ID 
@@ -378,6 +398,9 @@ int main(){
     CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
+    CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [22 x i8] c\"Error division by zero\00\"");
+
+
 
     yyparse();
 

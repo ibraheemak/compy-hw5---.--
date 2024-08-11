@@ -322,7 +322,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
    | NOT Exp 
      { 
        checkBooleanExpression($2, *tableStack);
-       $$ = new ExpNode("bool");
+       $$ = emitBooleanNot(static_cast<ExpNode*>($2));
        printProductionRule(28);
        global_exp_type=$$->type;
      }
@@ -330,7 +330,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       $$ = new ExpNode("bool");
+       $$ =emitBooleanAnd(static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(29);
        global_exp_type=$$->type;
      }
@@ -338,14 +338,14 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       $$ = new ExpNode("bool");
+       $$ =emitBooleanOr(static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(30);
        global_exp_type=$$->type;
      }
    | Exp equality Exp 
      { 
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);
-       $$ = new ExpNode("bool");
+       $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(31);
        global_exp_type=$$->type;
      }
@@ -353,7 +353,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkNumericExpression($1, *tableStack);
        checkNumericExpression($3, *tableStack);
-       $$ = new ExpNode("bool");
+       $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        printProductionRule(31);
        global_exp_type=$$->type;
      }

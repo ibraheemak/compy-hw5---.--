@@ -66,7 +66,7 @@ if (le->type == "byte" && re->type == "byte") {
 }
 
 
-
+/*
 void checkDivisionByZero(ExpNode* exp) { // it will be done at runtime
     string checkZero =freshVar();
     string exp_llvm_type=getLLVMType(exp->type);
@@ -110,7 +110,48 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
         exit(0);
     }
 }
+*/
+ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
+    string result = freshVar();
+    string leVar = le->llvm_var;
+    string reVar = re->llvm_var;
 
+    // Promote byte to int if necessary
+    if (le->type == "byte") {
+        leVar = promoteByteToInt(le);
+    }
+    if (re->type == "byte") {
+        reVar = promoteByteToInt(re);
+    }
+
+    // Division by zero check
+    string checkZero = freshVar();
+    string labelDivByZero = CodeBuffer::instance().freshLabel();
+    string labelSafeDiv = CodeBuffer::instance().freshLabel();
+    
+    CodeBuffer::instance().emit(checkZero + " = icmp eq i32 " + reVar + ", 0");
+    CodeBuffer::instance().emit("br i1 " + checkZero + ", label %" + labelDivByZero + ", label %" + labelSafeDiv);
+    
+    // Division by zero case
+    CodeBuffer::instance().emit(labelDivByZero + ":");
+    CodeBuffer::instance().emit("call void @print(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str_zeroDiv, i32 0, i32 0))");
+    CodeBuffer::instance().emit("call void @exit(i32 1)");
+    CodeBuffer::instance().emit("unreachable");
+    
+    // Safe division case
+    CodeBuffer::instance().emit(labelSafeDiv + ":");
+    
+    if (le->type == "int" && re->type == "int") {
+        CodeBuffer::instance().emit(result + " = sdiv i32 " + leVar + ", " + reVar);
+        return new ExpNode("int", result);
+    } else if (le->type == "byte" && re->type == "byte") {
+        CodeBuffer::instance().emit(result + " = udiv i32 " + leVar + ", " + reVar);
+        return truncateIntToByte(new ExpNode("int", result));
+    } else {
+        output::errorMismatch(yylineno);
+        exit(0);
+    }
+}
 
 //_________________________________________boolean_________________________________________
 

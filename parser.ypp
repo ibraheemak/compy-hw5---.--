@@ -325,13 +325,18 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
       // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
 
-       if(static_cast<Binop*>($2)->op=="*"){
-        $$=emitArithmetic("mul",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-       }
+      //  if(static_cast<Binop*>($2)->op=="*"){
+      //   $$=emitArithmetic("mul",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+      //  }
        
-       if(static_cast<Binop*>($2)->op=="/"){
-        $$=emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-       }
+      //  if(static_cast<Binop*>($2)->op=="/"){
+      //   $$=emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+      //  }
+      if(static_cast<Binop*>($2)->op=="/"){
+        $$ = emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+      } else if(static_cast<Binop*>($2)->op=="*"){
+        $$ = emitArithmetic("mul",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+      }
 
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);
@@ -427,19 +432,33 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | LPAREN Type RPAREN Exp 
      { 
-       string targetType = static_cast<TNode*>($2)->type;
-       if( targetType != "int" && targetType !="byte"){
-        output::errorMismatch(yylineno);
-         exit(0);
-       }
-       if(!isTypeCompatible(targetType, $4->type,true)) {
-         output::errorMismatch(yylineno);
-         exit(0);
-       }
-       $$ = new ExpNode(targetType);
-       printProductionRule(32);
-       global_exp_type=$$->type;
-       global_Exp=dynamic_cast<ExpNode*>($$);
+    string targetType = static_cast<TNode*>($2)->type;
+    string sourceType = $4->type;
+    string llvmTargetType = getLLVMType(targetType);
+    string llvmSourceType = getLLVMType(sourceType);
+    
+    if (targetType != "int" && targetType != "byte") {
+      output::errorMismatch(yylineno);
+      exit(0);
+    }
+    if (!isTypeCompatible(targetType, sourceType, true)) {
+      output::errorMismatch(yylineno);
+      exit(0);
+    }
+    
+    string resultVar = freshVar();
+    if (targetType == "int" && sourceType == "byte") {
+      CodeBuffer::instance().emit(resultVar + " = zext i8 " + $4->llvm_var + " to i32");
+    } else if (targetType == "byte" && sourceType == "int") {
+      CodeBuffer::instance().emit(resultVar + " = trunc i32 " + $4->llvm_var + " to i8");
+    } else {
+      resultVar = $4->llvm_var; // No conversion needed
+    }
+    
+    $$ = new ExpNode(targetType, resultVar);
+    printProductionRule(32);
+    global_exp_type = $$->type;
+    global_Exp = dynamic_cast<ExpNode*>($$);
      }
    ;
     // Exp: LPAREN Exp RPAREN{printProductionRule(19);}

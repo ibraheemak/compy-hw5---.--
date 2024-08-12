@@ -70,14 +70,16 @@ class ExpNode : public TNode {
 public:
     string true_label;
     string false_label;
-    
+    string next_label; //it should be for statement but this easer
     ExpNode(const string &type) : TNode(type) {
-         true_label=CodeBuffer::instance().freshLabel();
+        true_label=CodeBuffer::instance().freshLabel();
         false_label=CodeBuffer::instance().freshLabel();
+        next_label=CodeBuffer::instance().freshLabel();
     }
     ExpNode(const string &type,const string &llvm_var) : TNode(type,llvm_var) {
         true_label=CodeBuffer::instance().freshLabel();
         false_label=CodeBuffer::instance().freshLabel();
+        next_label=CodeBuffer::instance().freshLabel();
     }
 };
 

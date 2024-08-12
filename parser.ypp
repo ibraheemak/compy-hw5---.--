@@ -20,6 +20,9 @@
     string global_label="";
     #include "cg.hpp"
     #include "helper.hpp"
+    #include <stack>
+    stack<ExpNode*> globalExpStack;
+
 %}
 
 
@@ -143,19 +146,29 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
+           ExpNode* globalExp=globalExpStack.top();
+           globalExpStack.pop();
+           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
+           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
            printProductionRule(10);
            delete $3;
            
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE1 Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE Statement CLOSE_SCOPE //still need to add label exp.false_label before the last statement.
          {
-           CodeBuffer::instance().emit(global_label +":");
+          ExpNode* globalExp=globalExpStack.top();
+          globalExpStack.pop();
+           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
+           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
            printProductionRule(11);
            delete $3;
          }
          | WHILE LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE_LOOP Statement
          {
+           ExpNode* globalExp=globalExpStack.top();
+           globalExpStack.pop();
+           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
            loopDepth--;
@@ -173,18 +186,15 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            printProductionRule(14);
          }
          ;
+
 CLOSE_SCOPE: %empty
            {
              exitScope(*tableStack);
              offsettStack->pop_offset(yylineno);
+            ExpNode* globalExp=globalExpStack.top();
+             CodeBuffer::instance().emit("br label %" + globalExp->next_label);
            };
 
-CLOSE_SCOPE1: %empty
-           {
-             CodeBuffer::instance().emit("br label %" + global_label);
-             exitScope(*tableStack);
-             offsettStack->pop_offset(yylineno);
-           };
 
 M_NEW_SCOPE: %empty
            {
@@ -192,6 +202,7 @@ M_NEW_SCOPE: %empty
              offsettStack->push_offset(offsettStack->top_offset(yylineno));
            }
            ;
+
 
 M_NEW_SCOPE_LOOP: %empty
                 {
@@ -207,6 +218,7 @@ M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                    exit(0);
                   }
                   CodeBuffer::instance().emit(global_Exp->true_label + ":");
+                  globalExpStack.push(global_Exp);
 
                 };
 //////////////////////////////////////////////////////////////////////////////////

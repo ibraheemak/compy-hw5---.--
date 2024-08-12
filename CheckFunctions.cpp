@@ -317,7 +317,8 @@ string formatArgTypes(const vector<string>& argTypes) {
     }
     return result;
 }
-ExpNode* checkFunctionCall(TablesStack& tableStack, const string& funcName, const vector<string>& argTypes, int lineno) {
+// changing checkFunctionCall
+functions* checkFunctionCall(TablesStack& tableStack, const string& funcName, const vector<string>& argTypes, int lineno) {
     string funcType = getSymbolType(tableStack, funcName);
     if (funcType.empty()) {
         output::errorUndefFunc(lineno, funcName);
@@ -338,7 +339,12 @@ ExpNode* checkFunctionCall(TablesStack& tableStack, const string& funcName, cons
         exit(0);
     }
 
-    functions* func = static_cast<functions*>(entry);
+    // functions* func = static_cast<functions*>(entry);
+    functions* func = dynamic_cast<functions*>(entry);
+    if (!func) {
+        output::errorUndefFunc(lineno, funcName);
+        exit(0);
+    }
 
     // Check if the argument types match
     bool matchFound = false;
@@ -356,7 +362,7 @@ ExpNode* checkFunctionCall(TablesStack& tableStack, const string& funcName, cons
     }
 
     // If we get here, the call is valid
-    return new ExpNode(func->ret_type);
+    return func;
 }
 
 void checkReturnStatement(TablesStack& tableStack, const string& returnType, int lineno) {

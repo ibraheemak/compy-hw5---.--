@@ -216,7 +216,10 @@ Call: ID LPAREN Exp RPAREN
       string funcName = static_cast<IdentifierStr*>($1)->id;
       string argType = $3->type;  // This will be "int" in your example
       vector<string> argTypes = {argType};
-      $$ = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
+      // changing checkFunctionCall
+      // $$ = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
+      functions* func = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
+      /*
       // Check if the function exists
       tableEntry* entry = nullptr;
       for (const auto& e : tableStack->ParentScope->scope) {
@@ -244,12 +247,10 @@ Call: ID LPAREN Exp RPAREN
         output::errorUndefFunc(yylineno, funcName);
         exit(0);
     }
- /*   cout<<"func->ret_type: "<<func->ret_type<<endl; ///delete
-    cout<<"func->name: "<<func->name<<endl; /////delete
-    cout<<"func->isoverride: "<<func->isOverride<<endl;/////delete
-     cout<<"func->allargs: "<<func->all_arg[0]<<" , "<<func->all_arg[1]<<endl;/////delete
-   */ 
 
+    */
+
+      /*
       bool matchFound = false;
         for (const auto& paramType : func->all_arg) {
             if (isTypeCompatible(paramType, $3->type)) {
@@ -262,9 +263,22 @@ Call: ID LPAREN Exp RPAREN
             output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
             exit(0);
         }
-      // Create the expression node with the function's return type
-     // cout<<"func->ret_type: "<<func->ret_type<<endl; //////////////////////////delete
-      $$ = new ExpNode(func->ret_type);
+      */
+     if (!isTypeCompatible(func->all_arg[0], $3->type)) {
+    output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
+    exit(0);
+}
+
+      string resultVar;
+      string callInstr;
+      if (func->ret_type == "void") {
+          callInstr = "call void @" + funcName + "(" + llvmArgType + " " + $3->llvm_var + ")";
+      } else {
+          resultVar = freshVar();
+          callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + llvmArgType + " " + $3->llvm_var + ")";
+      }
+      CodeBuffer::instance().emit(callInstr);
+      $$ = new ExpNode(func->ret_type, func->ret_type == "void" ? "" : resultVar);
      // cout<<$$->type<<endl; /////////////////////delete
       printProductionRule(15);
       
@@ -447,6 +461,36 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
 
 
 %%
+
+void initBuiltInFunctions() {
+    CodeBuffer::instance().emitGlobal("@.str_specifier = private unnamed_addr constant [4 x i8] c\"%s\\0A\\00\", align 1");
+    CodeBuffer::instance().emitGlobal("@.int_specifier = private unnamed_addr constant [4 x i8] c\"%d\\0A\\00\", align 1");
+    CodeBuffer::instance().emitGlobal("@.int_specifier_scan = private unnamed_addr constant [3 x i8] c\"%d\\00\", align 1");
+
+    // print function
+    CodeBuffer::instance().emitGlobal("define void @print(i8*) {");
+    CodeBuffer::instance().emitGlobal("  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0");
+    CodeBuffer::instance().emitGlobal("  call i32 (i8*, ...) @printf(i8* %spec_ptr, i8* %0)");
+    CodeBuffer::instance().emitGlobal("  ret void");
+    CodeBuffer::instance().emitGlobal("}");
+
+    // printi function
+    CodeBuffer::instance().emitGlobal("define void @printi(i32) {");
+    CodeBuffer::instance().emitGlobal("  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0");
+    CodeBuffer::instance().emitGlobal("  call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)");
+    CodeBuffer::instance().emitGlobal("  ret void");
+    CodeBuffer::instance().emitGlobal("}");
+
+    // readi function
+    CodeBuffer::instance().emitGlobal("define i32 @readi() {");
+    CodeBuffer::instance().emitGlobal("  %spec_ptr = getelementptr [3 x i8], [3 x i8]* @.int_specifier_scan, i32 0, i32 0");
+    CodeBuffer::instance().emitGlobal("  %num = alloca i32");
+    CodeBuffer::instance().emitGlobal("  call i32 (i8*, ...) @scanf(i8* %spec_ptr, i32* %num)");
+    CodeBuffer::instance().emitGlobal("  %result = load i32, i32* %num");
+    CodeBuffer::instance().emitGlobal("  ret i32 %result");
+    CodeBuffer::instance().emitGlobal("}");
+}
+
 int main(){
     // yydebug = 1; 
     CodeBuffer::instance().emit("define i32 @main(){");
@@ -455,9 +499,12 @@ int main(){
     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [22 x i8] c\"Error division by zero\00\"");
 
+    // defining the built in functions 
+    initBuiltInFunctions();
 
-
+    // yyparse
     yyparse();
+    // yyparse
 
     exitScope(*tableStack);
 

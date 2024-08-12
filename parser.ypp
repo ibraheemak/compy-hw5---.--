@@ -89,8 +89,13 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | Type ID SC 
          {
+           string varName = static_cast<IdentifierStr*>($2)->id;
+           string varType = static_cast<TNode*>($1)->type;
+           string llvmType = getLLVMType(varType);
+           string llvmVarName = "%" + varName;
+           CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
            checkVariableDeclaration(*tableStack, static_cast<IdentifierStr*>($2)->id, yylineno);
-           addSymbolToCurrentScope(*tableStack, static_cast<IdentifierStr*>($2)->id, static_cast<TNode*>($1)->type, offsettStack->top_offset(yylineno));
+           addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
            delete static_cast<IdentifierStr*>($2);
            delete static_cast<TNode*>($1);
@@ -98,9 +103,16 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | Type ID ASSIGN Exp SC
          {
-           checkVariableDeclaration(*tableStack, static_cast<IdentifierStr*>($2)->id, yylineno);
-           checkAssignment(static_cast<TNode*>($1)->type, $4->type, yylineno);
-           addSymbolToCurrentScope(*tableStack, static_cast<IdentifierStr*>($2)->id, static_cast<TNode*>($1)->type, offsettStack->top_offset(yylineno));
+           string varName = static_cast<IdentifierStr*>($2)->id;
+           string varType = static_cast<TNode*>($1)->type;
+           string expType = $4->type;
+           checkVariableDeclaration(*tableStack, varName, yylineno);
+           checkAssignment(varType, expType, yylineno);
+           string llvmType = getLLVMType(varType);
+           string llvmVarName = "%" + varName;
+           CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+           CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
+           addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
            delete static_cast<IdentifierStr*>($2);
            delete static_cast<TNode*>($1);
@@ -109,12 +121,16 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | ID ASSIGN Exp SC
          {
-           string idType = getSymbolType(*tableStack, static_cast<IdentifierStr*>($1)->id);
-           if (idType.empty()) {
-             output::errorUndef(yylineno, static_cast<IdentifierStr*>($1)->id);
+           string varName = static_cast<IdentifierStr*>($1)->id;
+           string varType = getSymbolType(*tableStack, varName);
+           if (varType.empty()) {
+             output::errorUndef(yylineno, varName);
              exit(0);
            }
            checkAssignment(idType, $3->type, yylineno);
+           string llvmType = getLLVMType(varType);
+           string llvmVarName = "%" + varName;
+           CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
            delete static_cast<IdentifierStr*>($1);
            delete $3;
            printProductionRule(7);
@@ -308,12 +324,21 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | ID 
      { 
-       string type = getSymbolType(*tableStack, static_cast<IdentifierStr*>($1)->id);
-       if(type.empty()||type=="function") { //check
-         output::errorUndef(yylineno, static_cast<IdentifierStr*>($1)->id);
+       string varName = static_cast<IdentifierStr*>($1)->id;
+       string varType = getSymbolType(*tableStack, varName);
+       
+       if(varType.empty() || varType=="function") {
+         output::errorUndef(yylineno, varName);
          exit(0);
        }
-       $$ = new ExpNode(type);
+       string llvmType = getLLVMType(varType);
+       string llvmVarName = "%" + varName;
+       string resultVar = freshVar();
+       
+       // Emit LLVM IR for loading variable value
+       CodeBuffer::instance().emit(resultVar + " = load " + llvmType + ", " + llvmType + "* " + llvmVarName);
+       $$ = new ExpNode(type,resultVar);
+       
        printProductionRule(21);
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);

@@ -155,7 +155,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            delete $3;
            
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE Statement CLOSE_SCOPE //still need to add label exp.false_label before the last statement.
+         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE //still need to add label exp.false_label before the last statement.
          {
           ExpNode* globalExp=globalExpStack.top();
           globalExpStack.pop();
@@ -164,35 +164,98 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            printProductionRule(11);
            delete $3;
          }
-         | WHILE LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE_LOOP Statement
+         | WHILE LPAREN Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
          {
-           ExpNode* globalExp=globalExpStack.top();
+           ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
-           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
+           if(globalExp != $3) cout << "errrrrror ya m3alem" << endl;
+           
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
            loopDepth--;
            printProductionRule(12);
            delete $3;
          }
+         ;
          | BREAK SC
          {
            checkBreakStatement(loopDepth, yylineno);
+           ExpNode* globalExp = globalExpStack.top();
+           CodeBuffer::instance().emit("br label %" + globalExp->false_label);
            printProductionRule(13);
          }
-         | CONTINUE SC
+         ;
+
+          | CONTINUE SC
          {
            checkContinueStatement(loopDepth, yylineno);
+           ExpNode* globalExp = globalExpStack.top();
+           CodeBuffer::instance().emit("br label %" + globalExp->continue_label);
            printProductionRule(14);
          }
          ;
+
+M_CHECK_WHILE_BOOL: %empty
+                  {
+                    if (!isBooleanType(global_exp_type)) {
+                     output::errorMismatch(yylineno);
+                     exit(0);
+                    }
+                    string conditionLabel = CodeBuffer::instance().freshLabel();
+                    CodeBuffer::instance().emit(conditionLabel + ":");
+                    globalExpStack.push(global_Exp);
+                    
+                    // Emit the conditional branch
+                    CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                  }
+                  ;
+
+M_ADD_WHILE_TRUE_LABEL: %empty
+                      {
+                        ExpNode* globalExp = globalExpStack.top();
+                        CodeBuffer::instance().emit(globalExp->true_label + ":");
+                      }
+                      ;
+
+M_ADD_WHILE_END: %empty
+               {
+                 ExpNode* globalExp = globalExpStack.top();
+                 
+                 // Emit jump back to the condition check
+                 string conditionLabel = CodeBuffer::instance().freshLabel();
+                 CodeBuffer::instance().emit("br label %" + conditionLabel);
+                 
+                 // Emit the loop exit label (false label)
+                 CodeBuffer::instance().emit(globalExp->false_label + ":");
+                 
+                 // Create a new label for the code after the loop
+                 string afterLoopLabel = CodeBuffer::instance().freshLabel();
+                 CodeBuffer::instance().emit(afterLoopLabel + ":");
+                 
+                 // Update the ExpNode with the new labels
+                 globalExp->next_label = afterLoopLabel;
+                 globalExp->continue_label = conditionLabel;
+                 
+                 // You might want to store these labels in a structure for nested loops
+                 // if you need to handle break and continue for multiple loop levels
+               }
+               ;
+
+M_ADD_FALSE_LABEL: %empty
+                 {
+                   ExpNode* globalExp = globalExpStack.top();
+                   CodeBuffer::instance().emit(globalExp->false_label + ":");
+                 }
+                 ;
 
 CLOSE_SCOPE: %empty
            {
              exitScope(*tableStack);
              offsettStack->pop_offset(yylineno);
-            ExpNode* globalExp=globalExpStack.top();
-             CodeBuffer::instance().emit("br label %" + globalExp->next_label);
+             if (!globalExpStack.empty()) {
+               ExpNode* globalExp = globalExpStack.top();
+               CodeBuffer::instance().emit("br label %" + globalExp->next_label);
+             }
            };
 
 
@@ -403,27 +466,25 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       emitBooleanAnd(dynamic_cast<ExpNode*>($1),dynamic_cast<ExpNode*>($3));
+       emitBooleanAnd(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label=static_cast<ExpNode*>($3)->true_label;
-       static_cast<ExpNode*>($$)->false_label=static_cast<ExpNode*>($3)->false_label;
-
+       static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($3)->true_label;
+       static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($1)->false_label;
        printProductionRule(29);
-       global_exp_type=$$->type;
-       global_Exp=dynamic_cast<ExpNode*>($$);
+       global_exp_type = $$->type;
+       global_Exp = dynamic_cast<ExpNode*>($$);
      }
    | Exp OR Exp 
      { 
        checkBooleanExpression($1, *tableStack);
        checkBooleanExpression($3, *tableStack);
-       emitBooleanOr(dynamic_cast<ExpNode*>($1),dynamic_cast<ExpNode*>($3));
+       emitBooleanOr(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
        $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label=static_cast<ExpNode*>($3)->true_label;
-       static_cast<ExpNode*>($$)->false_label=static_cast<ExpNode*>($3)->false_label;
-
+       static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($1)->true_label;
+       static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($3)->false_label;
        printProductionRule(30);
-       global_exp_type=$$->type;
-       global_Exp=dynamic_cast<ExpNode*>($$);
+       global_exp_type = $$->type;
+       global_Exp = dynamic_cast<ExpNode*>($$);
      }
    | Exp equality Exp 
      { 

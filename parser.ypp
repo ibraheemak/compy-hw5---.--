@@ -112,7 +112,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            checkVariableDeclaration(*tableStack, varName, yylineno);
            checkAssignment(varType, expType, yylineno);
            string llvmType = getLLVMType(varType);
-           string llvmVarName = "%" + varName;
+           string llvmVarName = "%" + varName;           
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
            CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
            addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
@@ -130,7 +130,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
              output::errorUndef(yylineno, varName);
              exit(0);
            }
-           checkAssignment(idType, $3->type, yylineno);
+           checkAssignment(varType, $3->type, yylineno); //check12
            string llvmType = getLLVMType(varType);
            string llvmVarName = "%" + varName;
            CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
@@ -190,7 +190,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          {
            checkContinueStatement(loopDepth, yylineno);
            ExpNode* globalExp = globalExpStack.top();
-           CodeBuffer::instance().emit("br label %" + globalExp->continue_label);
+           CodeBuffer::instance().emit("br label %" + globalExp->next_label); //check12
            printProductionRule(14);
          }
          ;
@@ -206,7 +206,7 @@ M_CHECK_WHILE_BOOL: %empty
                     globalExpStack.push(global_Exp);
                     
                     // Emit the conditional branch
-                    CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                    CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);//check12
                   }
                   ;
 
@@ -234,7 +234,7 @@ M_ADD_WHILE_END: %empty
                  
                  // Update the ExpNode with the new labels
                  globalExp->next_label = afterLoopLabel;
-                 globalExp->continue_label = conditionLabel;
+               //  globalExp->continue_label = conditionLabel; //check12
                  
                  // You might want to store these labels in a structure for nested loops
                  // if you need to handle break and continue for multiple loop levels
@@ -347,10 +347,10 @@ Call: ID LPAREN Exp RPAREN
       string resultVar;
       string callInstr;
       if (func->ret_type == "void") {
-          callInstr = "call void @" + funcName + "(" + llvmArgType + " " + $3->llvm_var + ")";
+          callInstr = "call void @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
       } else {
           resultVar = freshVar();
-          callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + llvmArgType + " " + $3->llvm_var + ")";
+          callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
       }
       CodeBuffer::instance().emit(callInstr);
       $$ = new ExpNode(func->ret_type, func->ret_type == "void" ? "" : resultVar);
@@ -431,7 +431,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        
        // Emit LLVM IR for loading variable value
        CodeBuffer::instance().emit(resultVar + " = load " + llvmType + ", " + llvmType + "* " + llvmVarName);
-       $$ = new ExpNode(type,resultVar);
+       $$ = new ExpNode(varType,resultVar); //check12
        
        printProductionRule(21);
        global_exp_type=$$->type;
@@ -589,7 +589,7 @@ int main(){
     CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
-    CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [22 x i8] c\"Error division by zero\00\"");
+    CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
 
     // defining the built in functions 
     initBuiltInFunctions();

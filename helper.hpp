@@ -22,6 +22,10 @@ string getLLVMType(const string& type) { // i8 or i32
         return "i32";
     } else if (type == "byte") {
         return "i8";
+    }else if (type == "bool") {
+        return "i1";
+    }else if (type == "string") {
+        return "i8*"; 
     }
     return "bug at getLLVMType";
 }

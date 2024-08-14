@@ -97,6 +97,14 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            string llvmType = getLLVMType(varType);
            string llvmVarName = "%" + varName;
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+           
+           // Initialize with default value
+           if (varType == "bool") {
+             CodeBuffer::instance().emit("store i1 false, i1* " + llvmVarName);
+           } else if (varType == "int" || varType == "byte") {
+             CodeBuffer::instance().emit("store " + llvmType + " 0, " + llvmType + "* " + llvmVarName);
+           }
+           
            checkVariableDeclaration(*tableStack, static_cast<IdentifierStr*>($2)->id, yylineno);
            addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
@@ -114,6 +122,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            string llvmType = getLLVMType(varType);
            string llvmVarName = "%" + varName;           
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+           
            CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
            addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
@@ -452,8 +461,8 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | STRING { $$ = new ExpNode("string");printProductionRule(25); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
-   | TRUE { $$ = new ExpNode("bool"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
-   | FALSE { $$ = new ExpNode("bool"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | TRUE { $$ = new ExpNode("bool", "true"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | FALSE { $$ = new ExpNode("bool", "false"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | NOT Exp 
      { 
        checkBooleanExpression($2, *tableStack);
@@ -463,29 +472,29 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_Exp=dynamic_cast<ExpNode*>($$);
      }
    | Exp AND Exp 
-     { 
-       checkBooleanExpression($1, *tableStack);
-       checkBooleanExpression($3, *tableStack);
-       emitBooleanAnd(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-       $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($3)->true_label;
-       static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($1)->false_label;
-       printProductionRule(29);
-       global_exp_type = $$->type;
-       global_Exp = dynamic_cast<ExpNode*>($$);
-     }
-   | Exp OR Exp 
-     { 
-       checkBooleanExpression($1, *tableStack);
-       checkBooleanExpression($3, *tableStack);
-       emitBooleanOr(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-       $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($1)->true_label;
-       static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($3)->false_label;
-       printProductionRule(30);
-       global_exp_type = $$->type;
-       global_Exp = dynamic_cast<ExpNode*>($$);
-     }
+  { 
+    checkBooleanExpression($1, *tableStack);
+    checkBooleanExpression($3, *tableStack);
+    emitBooleanAnd(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+    $$ = new ExpNode("bool");
+    static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($3)->true_label;
+    static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($1)->false_label;
+    printProductionRule(29);
+    global_exp_type = $$->type;
+    global_Exp = dynamic_cast<ExpNode*>($$);
+  }
+| Exp OR Exp 
+  { 
+    checkBooleanExpression($1, *tableStack);
+    checkBooleanExpression($3, *tableStack);
+    emitBooleanOr(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
+    $$ = new ExpNode("bool");
+    static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($1)->true_label;
+    static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($3)->false_label;
+    printProductionRule(30);
+    global_exp_type = $$->type;
+    global_Exp = dynamic_cast<ExpNode*>($$);
+  }
    | Exp equality Exp 
      { 
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);

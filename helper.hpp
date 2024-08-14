@@ -159,75 +159,53 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 
 //_________________________________________boolean_________________________________________
 
-void emitBooleanOr(ExpNode* le, ExpNode* re) {
-    /*
+ExpNode* emitBooleanAnd(ExpNode* le, ExpNode* re) {
     string resultVar = freshVar();
-    string labe_leIsTrue = CodeBuffer::instance().freshLabel();
-    string label_leIsFalse = CodeBuffer::instance().freshLabel();
+    string labelEvalRight = CodeBuffer::instance().freshLabel();
+    string labelFalse = CodeBuffer::instance().freshLabel();
     string labelEnd = CodeBuffer::instance().freshLabel();
 
-    // Check if the left expression is true
-    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labe_leIsTrue + ", label %" + label_leIsFalse);
+    // Check left operand
+    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelEvalRight + ", label %" + labelFalse);
 
-    // If true, short-circuit to the end
-    CodeBuffer::instance().emit(labe_leIsTrue + ":");
-    CodeBuffer::instance().emit(resultVar + " = i1 1");
+    // Evaluate right operand
+    CodeBuffer::instance().emit(labelEvalRight + ":");
+    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + le->true_label + ", label %" + labelFalse);
+
+    // False case (short-circuit)
+    CodeBuffer::instance().emit(labelFalse + ":");
     CodeBuffer::instance().emit("br label %" + labelEnd);
 
-    // Evaluate the right expression if left is false
-    CodeBuffer::instance().emit(label_leIsFalse + ":");
-    CodeBuffer::instance().emit(resultVar + " = i1 " + re->llvm_var);
-    CodeBuffer::instance().emit("br label %" + labelEnd);
-
-    // End label
+    // End
     CodeBuffer::instance().emit(labelEnd + ":");
+    CodeBuffer::instance().emit(resultVar + " = phi i1 [ false, %" + labelFalse + " ], [ true, %" + le->true_label + " ]");
 
     return new ExpNode("bool", resultVar);
-    */
-
-
-    CodeBuffer::instance().emit("br i1"+ le->llvm_var + ", label %" + le->true_label + ", label %" + le->false_label);
-
-    // Emit the false label for the left expression and check the right expression
-    CodeBuffer::instance().emit(le->false_label + ":");
-
-    CodeBuffer::instance().emit("br i1"+ re->llvm_var + ", label %" + re->true_label + ", label %" + re->false_label);
-
 }
 
-void emitBooleanAnd(ExpNode* le, ExpNode* re) {
-    /*
+ExpNode* emitBooleanOr(ExpNode* le, ExpNode* re) {
     string resultVar = freshVar();
-    string label_leIsFalse = CodeBuffer::instance().freshLabel();
-    string labe_leIsTrue = CodeBuffer::instance().freshLabel();
+    string labelEvalRight = CodeBuffer::instance().freshLabel();
+    string labelTrue = CodeBuffer::instance().freshLabel();
     string labelEnd = CodeBuffer::instance().freshLabel();
 
-    // Check if the left expression is false
-    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labe_leIsTrue + ", label %" + label_leIsFalse);
+    // Check left operand
+    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelTrue + ", label %" + labelEvalRight);
 
-    // If false, short-circuit to the end
-    CodeBuffer::instance().emit(label_leIsFalse + ":");
-    CodeBuffer::instance().emit(resultVar + " = i1 0");
+    // Evaluate right operand
+    CodeBuffer::instance().emit(labelEvalRight + ":");
+    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + le->false_label);
+
+    // True case (short-circuit)
+    CodeBuffer::instance().emit(labelTrue + ":");
     CodeBuffer::instance().emit("br label %" + labelEnd);
 
-    // Evaluate the right expression if left is true
-    CodeBuffer::instance().emit(labe_leIsTrue + ":");
-    CodeBuffer::instance().emit(resultVar + " = i1 " + re->llvm_var);
-    CodeBuffer::instance().emit("br label %" + labelEnd);
-
-    // End label
+    // End
     CodeBuffer::instance().emit(labelEnd + ":");
+    CodeBuffer::instance().emit(resultVar + " = phi i1 [ true, %" + labelTrue + " ], [ false, %" + le->false_label + " ]");
 
     return new ExpNode("bool", resultVar);
-    */
-
-    CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + le->true_label + ", label %" + le->false_label);
-
-    // Emit the true label for the left expression to evaluate the right expression
-    CodeBuffer::instance().emit(le->true_label + ":");
-    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + re->true_label + ", label %" + re->false_label);
 }
-
 ExpNode* emitBooleanNot(ExpNode* exp) {
     string resultVar = freshVar();
     CodeBuffer::instance().emit(resultVar + " = xor i1 " + exp->llvm_var + ", 1");

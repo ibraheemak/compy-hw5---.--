@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "*.ypp": "c"
-    }
+        "*.ypp": "c",
+        "output.hpp": "c"
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc"
 }

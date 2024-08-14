@@ -155,23 +155,37 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
-           ExpNode* globalExp=globalExpStack.top();
+           ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
-           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
+           if(globalExp != $3) cout << "error in global exp stack" << endl;
+           
+           // Emit branch to next label (end of if statement)
+           CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
+           
+           // Emit false label
            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
+           
+           // Emit next label (end of if statement)
+           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
+           
            printProductionRule(10);
            delete $3;
-           
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE //still need to add label exp.false_label before the last statement.
+         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE
          {
-          ExpNode* globalExp=globalExpStack.top();
-          globalExpStack.pop();
-           if(globalExp!=$3) cout<<"errrrrror ya m3alem"<<endl;
+           ExpNode* globalExp = globalExpStack.top();
+           globalExpStack.pop();
+           if(globalExp != $3) cout << "error in global exp stack" << endl;
+           
+           // Emit branch to next label (end of if-else statement)
+           CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
+           
+           // Emit next label (end of if-else statement)
            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
+           
            printProductionRule(11);
            delete $3;
+         
          }
          | WHILE LPAREN Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
          {
@@ -250,13 +264,6 @@ M_ADD_WHILE_END: %empty
                }
                ;
 
-M_ADD_FALSE_LABEL: %empty
-                 {
-                   ExpNode* globalExp = globalExpStack.top();
-                   CodeBuffer::instance().emit(globalExp->false_label + ":");
-                 }
-                 ;
-
 CLOSE_SCOPE: %empty
            {
              exitScope(*tableStack);
@@ -289,10 +296,25 @@ M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                    output::errorMismatch(yylineno);
                    exit(0);
                   }
+                  // Emit the conditional branch
+                  CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                  
+                  // Emit the true label
                   CodeBuffer::instance().emit(global_Exp->true_label + ":");
+                  
                   globalExpStack.push(global_Exp);
-
                 };
+
+M_ADD_FALSE_LABEL: %empty
+                 {
+                   ExpNode* globalExp = globalExpStack.top();
+                   
+                   // Emit branch to next label (end of if-else statement)
+                   CodeBuffer::instance().emit("br label %" + globalExp->next_label);
+                   
+                   // Emit the false label (start of else block)
+                   CodeBuffer::instance().emit(globalExp->false_label + ":");
+                 };
 //////////////////////////////////////////////////////////////////////////////////
 
 Call: ID LPAREN Exp RPAREN

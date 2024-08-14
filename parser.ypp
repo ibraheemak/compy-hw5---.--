@@ -373,16 +373,37 @@ Call: ID LPAREN Exp RPAREN
      if (!isTypeCompatible(func->all_arg[0], $3->type)) {
     output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
     exit(0);
-}
-
+    }
       string resultVar;
       string callInstr;
+
+    if (argType == "string") {
+           if (func->ret_type == "void"){
+                callInstr="call void @" + funcName + "(i8* getelementptr ([" 
+                                    + to_string(static_cast<ExpNode*>($3)->string_length) 
+                                    + " x i8], [" 
+                                    + to_string(static_cast<ExpNode*>($3)->string_length) 
+                                    + " x i8]* " + static_cast<ExpNode*>($3)->llvm_var 
+                                    + ", i32 0, i32 0))";
+           }else{
+                resultVar = freshVar();
+                callInstr=resultVar + " = call " +  getLLVMType(func->ret_type) + " @" + funcName + "(i8* getelementptr  ([" 
+                                    + to_string(static_cast<ExpNode*>($3)->string_length) 
+                                    + " x i8], [" 
+                                    + to_string(static_cast<ExpNode*>($3)->string_length) 
+                                    + " x i8]* " + static_cast<ExpNode*>($3)->llvm_var 
+                                    + ", i32 0, i32 0))";
+           }
+    }else{
+
+      //cout<<"$3->llvm_var = "<<$3->llvm_var<<endl; //debug
       if (func->ret_type == "void") {
           callInstr = "call void @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
       } else {
           resultVar = freshVar();
           callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
       }
+    }
       CodeBuffer::instance().emit(callInstr);
       $$ = new ExpNode(func->ret_type, func->ret_type == "void" ? "" : resultVar);
      // cout<<$$->type<<endl; /////////////////////delete
@@ -482,7 +503,19 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);
      }
-   | STRING { $$ = new ExpNode("string");printProductionRule(25); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | STRING { 
+    
+              string llvm_var_name=freshVar();
+              llvm_var_name.replace(0, 1, "@.");  // Replace the first character `%` with `@.`
+
+              string strValue = static_cast<StringLex*>($1)->s;
+              strValue = strValue.substr(1, strValue.length() - 2); // Remove the first and last characters (the " ")
+               $$ = new ExpNode("string", llvm_var_name, static_cast<StringLex*>($1)->s.length() -1);
+              string_declare($$->llvm_var,strValue);
+              printProductionRule(25);
+               global_exp_type=$$->type;
+               global_Exp=dynamic_cast<ExpNode*>($$);
+            }
    | TRUE { $$ = new ExpNode("bool", "true"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | FALSE { $$ = new ExpNode("bool", "false"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | NOT Exp 

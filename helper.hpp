@@ -30,6 +30,12 @@ string getLLVMType(const string& type) { // i8 or i32
     return "bug at getLLVMType";
 }
 
+void string_declare(const string& varName, const string& strValue) {
+      CodeBuffer::instance().emitGlobal(varName + " = internal constant [" 
+                                      + to_string(strValue.length() + 1) 
+                                      + " x i8] c\"" + strValue + "\\00\"");
+}
+
 //_________________________________________arethmitics_________________________________________
 
 string promoteByteToInt(ExpNode* byteNode) {
@@ -248,7 +254,6 @@ ExpNode* emitRelop(const string& relop, ExpNode* le, ExpNode* re) {
     return new ExpNode("bool", resultVar);
 }
 
-//_________________________________________if_________________________________________
 
 
 #endif

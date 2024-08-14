@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by GNU Bison 3.7.6.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -46,10 +46,10 @@
    USER NAME SPACE" below.  */
 
 /* Identify Bison output, and Bison version.  */
-#define YYBISON 30802
+#define YYBISON 30706
 
 /* Bison version string.  */
-#define YYBISON_VERSION "3.8.2"
+#define YYBISON_VERSION "3.7.6"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -326,18 +326,12 @@ typedef int yy_state_fast_t;
 # define YY_USE(E) /* empty */
 #endif
 
+#if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-#if defined __GNUC__ && ! defined __ICC && 406 <= __GNUC__ * 100 + __GNUC_MINOR__
-# if __GNUC__ * 100 + __GNUC_MINOR__ < 407
-#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
-    _Pragma ("GCC diagnostic push")                                     \
-    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")
-# else
-#  define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                           \
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                            \
     _Pragma ("GCC diagnostic push")                                     \
     _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")              \
     _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-# endif
 # define YY_IGNORE_MAYBE_UNINITIALIZED_END      \
     _Pragma ("GCC diagnostic pop")
 #else
@@ -554,14 +548,14 @@ static const yytype_int8 yytranslate[] =
 };
 
 #if YYDEBUG
-/* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
+  /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
        0,    50,    50,    58,    76,    80,    87,    93,   115,   134,
      150,   151,   156,   174,   190,   203,   212,   221,   236,   243,
-     267,   278,   286,   293,   308,   320,   397,   398,   399,   402,
-     403,   425,   450,   471,   472,   473,   485,   486,   487,   488,
-     496,   508,   520,   528,   537
+     267,   278,   286,   293,   308,   320,   418,   419,   420,   423,
+     424,   446,   471,   492,   493,   494,   506,   519,   520,   521,
+     529,   541,   553,   561,   570
 };
 #endif
 
@@ -595,6 +589,18 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
+#ifdef YYPRINT
+/* YYTOKNUM[NUM] -- (External) token number corresponding to the
+   (internal) symbol number NUM (which must be that of a token).  */
+static const yytype_int16 yytoknum[] =
+{
+       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
+     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
+     275,   276,   277,   278,   279,   280,   281,   282,   283,   284,
+     285,   286
+};
+#endif
+
 #define YYPACT_NINF (-61)
 
 #define yypact_value_is_default(Yyn) \
@@ -605,8 +611,8 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 #define yytable_value_is_error(Yyn) \
   0
 
-/* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
-   STATE-NUM.  */
+  /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
+     STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
      -61,     5,    86,   -61,   -61,   -61,   -61,     6,    -1,     1,
@@ -620,9 +626,9 @@ static const yytype_int16 yypact[] =
      -61,    86,   -61,   -61
 };
 
-/* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
-   Performed when YYTABLE does not specify something else to do.  Zero
-   means the default is an error.  */
+  /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
+     Performed when YYTABLE does not specify something else to do.  Zero
+     means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
        3,     0,     0,     1,    26,    27,    28,     0,     0,     0,
@@ -636,23 +642,23 @@ static const yytype_int8 yydefact[] =
       24,     0,    20,    13
 };
 
-/* YYPGOTO[NTERM-NUM].  */
+  /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
      -61,   -61,   -61,    43,   -13,   -61,   -61,   -61,   -15,   -60,
      -61,   -61,   -61,    -2,    34,   -18
 };
 
-/* YYDEFGOTO[NTERM-NUM].  */
+  /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
        0,     1,     2,    14,    15,    69,    75,    79,    76,    23,
       73,    68,    81,    36,    17,    37
 };
 
-/* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
-   positive, shift that token.  If negative, reduce the rule whose
-   number is the opposite.  If YYTABLE_NINF, syntax error.  */
+  /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
+     positive, shift that token.  If negative, reduce the rule whose
+     number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
       16,    26,    38,    29,    30,     3,    40,    41,    72,    52,
@@ -693,8 +699,8 @@ static const yytype_int8 yycheck[] =
       29,    23,    24,    25,    26,    24,    25,    26
 };
 
-/* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
-   state STATE-NUM.  */
+  /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
+     symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
        0,    33,    34,     0,     3,     4,     6,     9,    10,    11,
@@ -708,7 +714,7 @@ static const yytype_int8 yystos[] =
       41,    44,    36,    40
 };
 
-/* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
+  /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_int8 yyr1[] =
 {
        0,    32,    33,    34,    35,    35,    36,    36,    36,    36,
@@ -718,7 +724,7 @@ static const yytype_int8 yyr1[] =
       47,    47,    47,    47,    47
 };
 
-/* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
+  /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     2,     0,     1,     2,     4,     3,     5,     4,
@@ -737,7 +743,6 @@ enum { YYENOMEM = -2 };
 #define YYACCEPT        goto yyacceptlab
 #define YYABORT         goto yyabortlab
 #define YYERROR         goto yyerrorlab
-#define YYNOMEM         goto yyexhaustedlab
 
 
 #define YYRECOVERING()  (!!yyerrstatus)
@@ -778,7 +783,10 @@ do {                                            \
     YYFPRINTF Args;                             \
 } while (0)
 
-
+/* This macro is provided for backward compatibility. */
+# ifndef YY_LOCATION_PRINT
+#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
+# endif
 
 
 # define YY_SYMBOL_PRINT(Title, Kind, Value, Location)                    \
@@ -805,6 +813,10 @@ yy_symbol_value_print (FILE *yyo,
   YY_USE (yyoutput);
   if (!yyvaluep)
     return;
+# ifdef YYPRINT
+  if (yykind < YYNTOKENS)
+    YYPRINT (yyo, yytoknum[yykind], *yyvaluep);
+# endif
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   YY_USE (yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
@@ -989,7 +1001,6 @@ yyparse (void)
   YYDPRINTF ((stderr, "Starting parse\n"));
 
   yychar = YYEMPTY; /* Cause a token to be read.  */
-
   goto yysetstate;
 
 
@@ -1015,7 +1026,7 @@ yysetstate:
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
-    YYNOMEM;
+    goto yyexhaustedlab;
 #else
     {
       /* Get the current used size of the three stacks, in elements.  */
@@ -1043,7 +1054,7 @@ yysetstate:
 # else /* defined YYSTACK_RELOCATE */
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
-        YYNOMEM;
+        goto yyexhaustedlab;
       yystacksize *= 2;
       if (YYMAXDEPTH < yystacksize)
         yystacksize = YYMAXDEPTH;
@@ -1054,7 +1065,7 @@ yysetstate:
           YY_CAST (union yyalloc *,
                    YYSTACK_ALLOC (YY_CAST (YYSIZE_T, YYSTACK_BYTES (yystacksize))));
         if (! yyptr)
-          YYNOMEM;
+          goto yyexhaustedlab;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
         YYSTACK_RELOCATE (yyvs_alloc, yyvs);
 #  undef YYSTACK_RELOCATE
@@ -1075,7 +1086,6 @@ yysetstate:
         YYABORT;
     }
 #endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
-
 
   if (yystate == YYFINAL)
     YYACCEPT;
@@ -1195,7 +1205,7 @@ yyreduce:
 
          printProductionRule(1);
        }
-#line 1199 "parser.tab.cpp"
+#line 1209 "parser.tab.cpp"
     break;
 
   case 3: /* M1: %empty  */
@@ -1213,7 +1223,7 @@ yyreduce:
     vector<string> readiParmType = {"int"};  
     addFunctionToGlobalScope(*tableStack, "readi", "int", readiParmType);
   }
-#line 1217 "parser.tab.cpp"
+#line 1227 "parser.tab.cpp"
     break;
 
   case 4: /* Statements: Statement  */
@@ -1222,7 +1232,7 @@ yyreduce:
                         // Debug: Ensure no type checks are done here directly.
               //for tests: cout << "Reducing Statements -> Statements Statement at line " << yylineno << endl; 
               }
-#line 1226 "parser.tab.cpp"
+#line 1236 "parser.tab.cpp"
     break;
 
   case 5: /* Statements: Statements Statement  */
@@ -1231,7 +1241,7 @@ yyreduce:
                         // Debug: Ensure no type checks are done here directly.
               //for tests: cout << "Reducing Statements -> Statements Statement at line " << yylineno << endl; 
               }
-#line 1235 "parser.tab.cpp"
+#line 1245 "parser.tab.cpp"
     break;
 
   case 6: /* Statement: LBRACE M_NEW_SCOPE Statements RBRACE  */
@@ -1241,7 +1251,7 @@ yyreduce:
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
          }
-#line 1245 "parser.tab.cpp"
+#line 1255 "parser.tab.cpp"
     break;
 
   case 7: /* Statement: Type ID SC  */
@@ -1267,7 +1277,7 @@ yyreduce:
            delete static_cast<TNode*>(yyvsp[-2]);
            printProductionRule(5);
          }
-#line 1271 "parser.tab.cpp"
+#line 1281 "parser.tab.cpp"
     break;
 
   case 8: /* Statement: Type ID ASSIGN Exp SC  */
@@ -1290,7 +1300,7 @@ yyreduce:
            delete yyvsp[-1];
            printProductionRule(6);
          }
-#line 1294 "parser.tab.cpp"
+#line 1304 "parser.tab.cpp"
     break;
 
   case 9: /* Statement: ID ASSIGN Exp SC  */
@@ -1310,13 +1320,13 @@ yyreduce:
            delete yyvsp[-1];
            printProductionRule(7);
          }
-#line 1314 "parser.tab.cpp"
+#line 1324 "parser.tab.cpp"
     break;
 
   case 10: /* Statement: Call SC  */
 #line 150 "parser.ypp"
                    { printProductionRule(8); }
-#line 1320 "parser.tab.cpp"
+#line 1330 "parser.tab.cpp"
     break;
 
   case 11: /* Statement: RETURN SC  */
@@ -1325,7 +1335,7 @@ yyreduce:
            checkReturnStatement(*tableStack, "void", yylineno);
            printProductionRule(9);
          }
-#line 1329 "parser.tab.cpp"
+#line 1339 "parser.tab.cpp"
     break;
 
   case 12: /* Statement: IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE  */
@@ -1347,7 +1357,7 @@ yyreduce:
            printProductionRule(10);
            delete yyvsp[-5];
          }
-#line 1351 "parser.tab.cpp"
+#line 1361 "parser.tab.cpp"
     break;
 
   case 13: /* Statement: IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE  */
@@ -1367,7 +1377,7 @@ yyreduce:
            delete yyvsp[-10];
          
          }
-#line 1371 "parser.tab.cpp"
+#line 1381 "parser.tab.cpp"
     break;
 
   case 14: /* Statement: WHILE LPAREN Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END  */
@@ -1383,7 +1393,7 @@ yyreduce:
            printProductionRule(12);
            delete yyvsp[-6];
          }
-#line 1387 "parser.tab.cpp"
+#line 1397 "parser.tab.cpp"
     break;
 
   case 15: /* Statement: BREAK SC  */
@@ -1394,7 +1404,7 @@ yyreduce:
            CodeBuffer::instance().emit("br label %" + globalExp->false_label);
            printProductionRule(13);
          }
-#line 1398 "parser.tab.cpp"
+#line 1408 "parser.tab.cpp"
     break;
 
   case 16: /* Statement: CONTINUE SC  */
@@ -1405,7 +1415,7 @@ yyreduce:
            CodeBuffer::instance().emit("br label %" + globalExp->next_label); //check12
            printProductionRule(14);
          }
-#line 1409 "parser.tab.cpp"
+#line 1419 "parser.tab.cpp"
     break;
 
   case 17: /* M_CHECK_WHILE_BOOL: %empty  */
@@ -1422,7 +1432,7 @@ yyreduce:
                     // Emit the conditional branch
                     CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);//check12
                   }
-#line 1426 "parser.tab.cpp"
+#line 1436 "parser.tab.cpp"
     break;
 
   case 18: /* M_ADD_WHILE_TRUE_LABEL: %empty  */
@@ -1431,7 +1441,7 @@ yyreduce:
                         ExpNode* globalExp = globalExpStack.top();
                         CodeBuffer::instance().emit(globalExp->true_label + ":");
                       }
-#line 1435 "parser.tab.cpp"
+#line 1445 "parser.tab.cpp"
     break;
 
   case 19: /* M_ADD_WHILE_END: %empty  */
@@ -1457,7 +1467,7 @@ yyreduce:
                  // You might want to store these labels in a structure for nested loops
                  // if you need to handle break and continue for multiple loop levels
                }
-#line 1461 "parser.tab.cpp"
+#line 1471 "parser.tab.cpp"
     break;
 
   case 20: /* CLOSE_SCOPE: %empty  */
@@ -1470,7 +1480,7 @@ yyreduce:
                CodeBuffer::instance().emit("br label %" + globalExp->next_label);
              }
            }
-#line 1474 "parser.tab.cpp"
+#line 1484 "parser.tab.cpp"
     break;
 
   case 21: /* M_NEW_SCOPE: %empty  */
@@ -1479,7 +1489,7 @@ yyreduce:
              createNewScope(*tableStack);
              offsettStack->push_offset(offsettStack->top_offset(yylineno));
            }
-#line 1483 "parser.tab.cpp"
+#line 1493 "parser.tab.cpp"
     break;
 
   case 22: /* M_NEW_SCOPE_LOOP: %empty  */
@@ -1489,7 +1499,7 @@ yyreduce:
                   offsettStack->push_offset(offsettStack->top_offset(yylineno));
                   loopDepth++;
                 }
-#line 1493 "parser.tab.cpp"
+#line 1503 "parser.tab.cpp"
     break;
 
   case 23: /* M_CHECK_IF_BOOL_andAddTrueLabel: %empty  */
@@ -1507,7 +1517,7 @@ yyreduce:
                   
                   globalExpStack.push(global_Exp);
                 }
-#line 1511 "parser.tab.cpp"
+#line 1521 "parser.tab.cpp"
     break;
 
   case 24: /* M_ADD_FALSE_LABEL: %empty  */
@@ -1521,7 +1531,7 @@ yyreduce:
                    // Emit the false label (start of else block)
                    CodeBuffer::instance().emit(globalExp->false_label + ":");
                  }
-#line 1525 "parser.tab.cpp"
+#line 1535 "parser.tab.cpp"
     break;
 
   case 25: /* Call: ID LPAREN Exp RPAREN  */
@@ -1581,16 +1591,37 @@ yyreduce:
      if (!isTypeCompatible(func->all_arg[0], yyvsp[-1]->type)) {
     output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
     exit(0);
-}
-
+    }
       string resultVar;
       string callInstr;
+
+    if (argType == "string") {
+           if (func->ret_type == "void"){
+                callInstr="call void @" + funcName + "(i8* getelementptr ([" 
+                                    + to_string(static_cast<ExpNode*>(yyvsp[-1])->string_length) 
+                                    + " x i8], [" 
+                                    + to_string(static_cast<ExpNode*>(yyvsp[-1])->string_length) 
+                                    + " x i8]* " + static_cast<ExpNode*>(yyvsp[-1])->llvm_var 
+                                    + ", i32 0, i32 0))";
+           }else{
+                resultVar = freshVar();
+                callInstr=resultVar + " = call " +  getLLVMType(func->ret_type) + " @" + funcName + "(i8* getelementptr  ([" 
+                                    + to_string(static_cast<ExpNode*>(yyvsp[-1])->string_length) 
+                                    + " x i8], [" 
+                                    + to_string(static_cast<ExpNode*>(yyvsp[-1])->string_length) 
+                                    + " x i8]* " + static_cast<ExpNode*>(yyvsp[-1])->llvm_var 
+                                    + ", i32 0, i32 0))";
+           }
+    }else{
+
+      //cout<<"$3->llvm_var = "<<$3->llvm_var<<endl; //debug
       if (func->ret_type == "void") {
           callInstr = "call void @" + funcName + "(" + getLLVMType(argType) + " " + yyvsp[-1]->llvm_var + ")";
       } else {
           resultVar = freshVar();
           callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + getLLVMType(argType) + " " + yyvsp[-1]->llvm_var + ")";
       }
+    }
       CodeBuffer::instance().emit(callInstr);
       yyval = new ExpNode(func->ret_type, func->ret_type == "void" ? "" : resultVar);
      // cout<<$$->type<<endl; /////////////////////delete
@@ -1599,35 +1630,35 @@ yyreduce:
       delete static_cast<IdentifierStr*>(yyvsp[-3]);
       delete yyvsp[-1];
     }
-#line 1603 "parser.tab.cpp"
+#line 1634 "parser.tab.cpp"
     break;
 
   case 26: /* Type: INT  */
-#line 397 "parser.ypp"
+#line 418 "parser.ypp"
           { yyval=new TNode("int"); printProductionRule(16); }
-#line 1609 "parser.tab.cpp"
+#line 1640 "parser.tab.cpp"
     break;
 
   case 27: /* Type: BYTE  */
-#line 398 "parser.ypp"
+#line 419 "parser.ypp"
            { yyval=new TNode("byte"); printProductionRule(17); }
-#line 1615 "parser.tab.cpp"
+#line 1646 "parser.tab.cpp"
     break;
 
   case 28: /* Type: BOOL  */
-#line 399 "parser.ypp"
+#line 420 "parser.ypp"
            { yyval=new TNode("bool"); printProductionRule(18); }
-#line 1621 "parser.tab.cpp"
+#line 1652 "parser.tab.cpp"
     break;
 
   case 29: /* Exp: LPAREN Exp RPAREN  */
-#line 402 "parser.ypp"
+#line 423 "parser.ypp"
                        { yyval = yyvsp[-1]; printProductionRule(19); global_exp_type=yyval->type; global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1627 "parser.tab.cpp"
+#line 1658 "parser.tab.cpp"
     break;
 
   case 30: /* Exp: Exp additive Exp  */
-#line 404 "parser.ypp"
+#line 425 "parser.ypp"
      { 
        checkNumericExpression(yyvsp[-2], *tableStack);
        checkNumericExpression(yyvsp[0], *tableStack);
@@ -1649,11 +1680,11 @@ yyreduce:
        global_Exp=dynamic_cast<ExpNode*>(yyval);
 
      }
-#line 1653 "parser.tab.cpp"
+#line 1684 "parser.tab.cpp"
     break;
 
   case 31: /* Exp: Exp multiplicative Exp  */
-#line 426 "parser.ypp"
+#line 447 "parser.ypp"
      { 
        checkNumericExpression(yyvsp[-2], *tableStack);
        checkNumericExpression(yyvsp[0], *tableStack);
@@ -1678,11 +1709,11 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1682 "parser.tab.cpp"
+#line 1713 "parser.tab.cpp"
     break;
 
   case 32: /* Exp: ID  */
-#line 451 "parser.ypp"
+#line 472 "parser.ypp"
      { 
        string varName = static_cast<IdentifierStr*>(yyvsp[0])->id;
        string varType = getSymbolType(*tableStack, varName);
@@ -1703,23 +1734,23 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1707 "parser.tab.cpp"
+#line 1738 "parser.tab.cpp"
     break;
 
   case 33: /* Exp: Call  */
-#line 471 "parser.ypp"
+#line 492 "parser.ypp"
           { yyval = yyvsp[0]; printProductionRule(22);global_exp_type=yyval->type;global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1713 "parser.tab.cpp"
+#line 1744 "parser.tab.cpp"
     break;
 
   case 34: /* Exp: NUM  */
-#line 472 "parser.ypp"
+#line 493 "parser.ypp"
          { yyval = new ExpNode("int"); printProductionRule(23);global_exp_type=yyval->type;global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1719 "parser.tab.cpp"
+#line 1750 "parser.tab.cpp"
     break;
 
   case 35: /* Exp: NUM B  */
-#line 474 "parser.ypp"
+#line 495 "parser.ypp"
      { 
        int value = static_cast<Num*>(yyvsp[-1])->num;
        if(!isLegalByteValue(value)) {
@@ -1731,29 +1762,41 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1735 "parser.tab.cpp"
+#line 1766 "parser.tab.cpp"
     break;
 
   case 36: /* Exp: STRING  */
-#line 485 "parser.ypp"
-            { yyval = new ExpNode("string");printProductionRule(25); global_exp_type=yyval->type;global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1741 "parser.tab.cpp"
+#line 506 "parser.ypp"
+            { 
+    
+              string llvm_var_name=freshVar();
+              llvm_var_name.replace(0, 1, "@.");  // Replace the first character `%` with `@.`
+
+              string strValue = static_cast<StringLex*>(yyvsp[0])->s;
+              strValue = strValue.substr(1, strValue.length() - 2); // Remove the first and last characters (the " ")
+               yyval = new ExpNode("string", llvm_var_name, static_cast<StringLex*>(yyvsp[0])->s.length() -1);
+              string_declare(yyval->llvm_var,strValue);
+              printProductionRule(25);
+               global_exp_type=yyval->type;
+               global_Exp=dynamic_cast<ExpNode*>(yyval);
+            }
+#line 1784 "parser.tab.cpp"
     break;
 
   case 37: /* Exp: TRUE  */
-#line 486 "parser.ypp"
+#line 519 "parser.ypp"
           { yyval = new ExpNode("bool", "true"); global_exp_type=yyval->type;global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1747 "parser.tab.cpp"
+#line 1790 "parser.tab.cpp"
     break;
 
   case 38: /* Exp: FALSE  */
-#line 487 "parser.ypp"
+#line 520 "parser.ypp"
            { yyval = new ExpNode("bool", "false"); global_exp_type=yyval->type;global_Exp=dynamic_cast<ExpNode*>(yyval);}
-#line 1753 "parser.tab.cpp"
+#line 1796 "parser.tab.cpp"
     break;
 
   case 39: /* Exp: NOT Exp  */
-#line 489 "parser.ypp"
+#line 522 "parser.ypp"
      { 
        checkBooleanExpression(yyvsp[0], *tableStack);
        yyval = emitBooleanNot(static_cast<ExpNode*>(yyvsp[0]));
@@ -1761,11 +1804,11 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1765 "parser.tab.cpp"
+#line 1808 "parser.tab.cpp"
     break;
 
   case 40: /* Exp: Exp AND Exp  */
-#line 497 "parser.ypp"
+#line 530 "parser.ypp"
   { 
     checkBooleanExpression(yyvsp[-2], *tableStack);
     checkBooleanExpression(yyvsp[0], *tableStack);
@@ -1777,11 +1820,11 @@ yyreduce:
     global_exp_type = yyval->type;
     global_Exp = dynamic_cast<ExpNode*>(yyval);
   }
-#line 1781 "parser.tab.cpp"
+#line 1824 "parser.tab.cpp"
     break;
 
   case 41: /* Exp: Exp OR Exp  */
-#line 509 "parser.ypp"
+#line 542 "parser.ypp"
   { 
     checkBooleanExpression(yyvsp[-2], *tableStack);
     checkBooleanExpression(yyvsp[0], *tableStack);
@@ -1793,11 +1836,11 @@ yyreduce:
     global_exp_type = yyval->type;
     global_Exp = dynamic_cast<ExpNode*>(yyval);
   }
-#line 1797 "parser.tab.cpp"
+#line 1840 "parser.tab.cpp"
     break;
 
   case 42: /* Exp: Exp equality Exp  */
-#line 521 "parser.ypp"
+#line 554 "parser.ypp"
      { 
        checkTypeMismatch(yyvsp[-2]->type, yyvsp[0]->type, "equality", yylineno);
        yyval = emitRelop(static_cast<Relop*>(yyvsp[-1])->op, static_cast<ExpNode*>(yyvsp[-2]),static_cast<ExpNode*>(yyvsp[0]));
@@ -1805,11 +1848,11 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1809 "parser.tab.cpp"
+#line 1852 "parser.tab.cpp"
     break;
 
   case 43: /* Exp: Exp relational Exp  */
-#line 529 "parser.ypp"
+#line 562 "parser.ypp"
      { 
        checkNumericExpression(yyvsp[-2], *tableStack);
        checkNumericExpression(yyvsp[0], *tableStack);
@@ -1818,11 +1861,11 @@ yyreduce:
        global_exp_type=yyval->type;
        global_Exp=dynamic_cast<ExpNode*>(yyval);
      }
-#line 1822 "parser.tab.cpp"
+#line 1865 "parser.tab.cpp"
     break;
 
   case 44: /* Exp: LPAREN Type RPAREN Exp  */
-#line 538 "parser.ypp"
+#line 571 "parser.ypp"
      { 
     string targetType = static_cast<TNode*>(yyvsp[-2])->type;
     string sourceType = yyvsp[0]->type;
@@ -1852,11 +1895,11 @@ yyreduce:
     global_exp_type = yyval->type;
     global_Exp = dynamic_cast<ExpNode*>(yyval);
      }
-#line 1856 "parser.tab.cpp"
+#line 1899 "parser.tab.cpp"
     break;
 
 
-#line 1860 "parser.tab.cpp"
+#line 1903 "parser.tab.cpp"
 
       default: break;
     }
@@ -1938,7 +1981,6 @@ yyerrorlab:
      label yyerrorlab therefore never appears in user code.  */
   if (0)
     YYERROR;
-  ++yynerrs;
 
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
@@ -1999,7 +2041,7 @@ yyerrlab1:
 `-------------------------------------*/
 yyacceptlab:
   yyresult = 0;
-  goto yyreturnlab;
+  goto yyreturn;
 
 
 /*-----------------------------------.
@@ -2007,22 +2049,24 @@ yyacceptlab:
 `-----------------------------------*/
 yyabortlab:
   yyresult = 1;
-  goto yyreturnlab;
+  goto yyreturn;
 
 
-/*-----------------------------------------------------------.
-| yyexhaustedlab -- YYNOMEM (memory exhaustion) comes here.  |
-`-----------------------------------------------------------*/
+#if !defined yyoverflow
+/*-------------------------------------------------.
+| yyexhaustedlab -- memory exhaustion comes here.  |
+`-------------------------------------------------*/
 yyexhaustedlab:
   yyerror (YY_("memory exhausted"));
   yyresult = 2;
-  goto yyreturnlab;
+  goto yyreturn;
+#endif
 
 
-/*----------------------------------------------------------.
-| yyreturnlab -- parsing is finished, clean up and return.  |
-`----------------------------------------------------------*/
-yyreturnlab:
+/*-------------------------------------------------------.
+| yyreturn -- parsing is finished, clean up and return.  |
+`-------------------------------------------------------*/
+yyreturn:
   if (yychar != YYEMPTY)
     {
       /* Make sure we have latest lookahead translation.  See comments at
@@ -2049,7 +2093,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 586 "parser.ypp"
+#line 619 "parser.ypp"
 
 
 void initBuiltInFunctions() {

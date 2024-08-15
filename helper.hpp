@@ -7,6 +7,8 @@
 #include "source.hpp"
 #include "hw3_output.hpp"
 using namespace std;
+extern int yylineno; 
+
 
 int var_counter=0;
 
@@ -35,6 +37,14 @@ void string_declare(const string& varName, const string& strValue) {
                                       + to_string(strValue.length() + 1) 
                                       + " x i8] c\"" + strValue + "\\00\"");
 }
+
+
+
+void emitDebugPrint(const std::string& message) {
+    // Emit the printf call
+    CodeBuffer::instance().emit(message);
+}
+
 
 //_________________________________________arethmitics_________________________________________
 
@@ -165,58 +175,43 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 
 //_________________________________________boolean_________________________________________
 
-ExpNode* emitBooleanAnd(ExpNode* le, ExpNode* re) {
-    string resultVar = freshVar();
+void emitBooleanAnd(ExpNode* le, ExpNode* re) {
     string labelEvalRight = CodeBuffer::instance().freshLabel();
-    string labelFalse = CodeBuffer::instance().freshLabel();
-    string labelEnd = CodeBuffer::instance().freshLabel();
-
+    string labelTrue = re->true_label;
+    string labelFalse = le->false_label;
     // Check left operand
     CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelEvalRight + ", label %" + labelFalse);
 
     // Evaluate right operand
     CodeBuffer::instance().emit(labelEvalRight + ":");
-    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + le->true_label + ", label %" + labelFalse);
-
-    // False case (short-circuit)
-    CodeBuffer::instance().emit(labelFalse + ":");
-    CodeBuffer::instance().emit("br label %" + labelEnd);
-
-    // End
-    CodeBuffer::instance().emit(labelEnd + ":");
-    CodeBuffer::instance().emit(resultVar + " = phi i1 [ false, %" + labelFalse + " ], [ true, %" + le->true_label + " ]");
-
-    return new ExpNode("bool", resultVar);
+    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + labelFalse);
 }
 
-ExpNode* emitBooleanOr(ExpNode* le, ExpNode* re) {
-    string resultVar = freshVar();
-    string labelEvalRight = CodeBuffer::instance().freshLabel();
-    string labelTrue = CodeBuffer::instance().freshLabel();
-    string labelEnd = CodeBuffer::instance().freshLabel();
 
-    // Check left operand
+void emitBooleanOr(ExpNode* le, ExpNode* re) {
+
+    string labelEvalRight = CodeBuffer::instance().freshLabel();
+    string labelTrue = le->true_label;
+    string labelFalse = re->false_label;
+
+    // Emit code to branch based on the left operand
     CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelTrue + ", label %" + labelEvalRight);
 
-    // Evaluate right operand
+    // Emit code for evaluating the right operand if the left one is false
     CodeBuffer::instance().emit(labelEvalRight + ":");
-    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + le->false_label);
-
-    // True case (short-circuit)
-    CodeBuffer::instance().emit(labelTrue + ":");
-    CodeBuffer::instance().emit("br label %" + labelEnd);
-
-    // End
-    CodeBuffer::instance().emit(labelEnd + ":");
-    CodeBuffer::instance().emit(resultVar + " = phi i1 [ true, %" + labelTrue + " ], [ false, %" + le->false_label + " ]");
-
-    return new ExpNode("bool", resultVar);
+    CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + labelFalse);
 }
-ExpNode* emitBooleanNot(ExpNode* exp) {
-    string resultVar = freshVar();
-    CodeBuffer::instance().emit(resultVar + " = xor i1 " + exp->llvm_var + ", 1");
-    return new ExpNode("bool", resultVar);
+
+
+void emitBooleanNot(ExpNode* exp) {
+    // Swap true and false labels
+    string temp = exp->true_label;
+    exp->true_label = exp->false_label;
+    exp->false_label = temp;
+
+    // No need to emit any LLVM code, just swap labels
 }
+
 
 
 ExpNode* emitRelop(const string& relop, ExpNode* le, ExpNode* re) {

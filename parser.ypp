@@ -158,12 +158,16 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
            if(globalExp != $3) cout << "error in global exp stack" << endl;
+
+            
+           // Emit false label
+           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
+
            
            // Emit branch to next label (end of if statement)
            CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
            
-           // Emit false label
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
+
            
            // Emit next label (end of if statement)
            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
@@ -297,9 +301,15 @@ M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                    exit(0);
                   }
                   // Emit the conditional branch
-                  CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                  //CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
                   
                   // Emit the true label
+                 // emitDebugPrint("hereeeeeeeeeee");
+                 if(global_Exp->llvm_var=="true"){
+                  CodeBuffer::instance().emit("br label %" + global_Exp->true_label);
+                 }else if (global_Exp->llvm_var=="false"){
+                  CodeBuffer::instance().emit("br label %" + global_Exp->false_label);
+                 }
                   CodeBuffer::instance().emit(global_Exp->true_label + ":");
                   
                   globalExpStack.push(global_Exp);
@@ -520,11 +530,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
    | FALSE { $$ = new ExpNode("bool", "false"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
    | NOT Exp 
      { 
-       checkBooleanExpression($2, *tableStack);
-       $$ = emitBooleanNot(static_cast<ExpNode*>($2));
-       printProductionRule(28);
-       global_exp_type=$$->type;
-       global_Exp=dynamic_cast<ExpNode*>($$);
+      checkBooleanExpression($2, *tableStack);
+      emitBooleanNot(dynamic_cast<ExpNode*>($2));
+      $$ = $2;  // No new node needed, just use the modified one
+    printProductionRule(28);
+    global_exp_type = $$->type;
+    global_Exp = dynamic_cast<ExpNode*>($$);
      }
    | Exp AND Exp 
   { 
@@ -654,6 +665,7 @@ int main(){
     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
+
 
     // defining the built in functions 
     initBuiltInFunctions();

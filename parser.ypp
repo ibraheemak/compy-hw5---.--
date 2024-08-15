@@ -123,7 +123,27 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            string llvmVarName = "%" + varName;           
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
            
-           CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
+           if (static_cast<ExpNode*>($4)->llvm_var.empty()&& varType=="bool") {
+             string trueLabel = CodeBuffer::instance().freshLabel();
+             string endLabel = CodeBuffer::instance().freshLabel();
+
+            // Emit the true label
+              CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->true_label + ":");
+              CodeBuffer::instance().emit("store i1 1, i1* " + llvmVarName);
+              CodeBuffer::instance().emit("br label %" + endLabel);
+
+            // Emit the false label
+            CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->false_label + ":");
+            CodeBuffer::instance().emit("store i1 0, i1* " + llvmVarName);
+            CodeBuffer::instance().emit("br label %" + endLabel);
+
+            // Emit the end label
+            CodeBuffer::instance().emit(endLabel + ":");
+
+            } else {
+            // Handle direct expressions
+                CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
+              }
            addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
            delete static_cast<IdentifierStr*>($2);
@@ -142,7 +162,27 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            checkAssignment(varType, $3->type, yylineno); //check12
            string llvmType = getLLVMType(varType);
            string llvmVarName = "%" + varName;
-           CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
+           if (static_cast<ExpNode*>($3)->llvm_var.empty()&& varType=="bool") {
+             string trueLabel = CodeBuffer::instance().freshLabel();
+             string endLabel = CodeBuffer::instance().freshLabel();
+
+            // Emit the true label
+              CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->true_label + ":");
+              CodeBuffer::instance().emit("store i1 1, i1* " + llvmVarName);
+              CodeBuffer::instance().emit("br label %" + endLabel);
+
+            // Emit the false label
+            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
+            CodeBuffer::instance().emit("store i1 0, i1* " + llvmVarName);
+            CodeBuffer::instance().emit("br label %" + endLabel);
+
+            // Emit the end label
+            CodeBuffer::instance().emit(endLabel + ":");
+
+            } else {
+            // Handle direct expressions
+                CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
+              }
            delete static_cast<IdentifierStr*>($1);
            delete $3;
            printProductionRule(7);
@@ -305,12 +345,12 @@ M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                   
                   // Emit the true label
                  // emitDebugPrint("hereeeeeeeeeee");
-                 if(global_Exp->llvm_var=="true"){
-                  CodeBuffer::instance().emit("br label %" + global_Exp->true_label);
-                 }else if (global_Exp->llvm_var=="false"){
-                  CodeBuffer::instance().emit("br label %" + global_Exp->false_label);
-                 }
-                  CodeBuffer::instance().emit(global_Exp->true_label + ":");
+                  if(global_Exp->llvm_var.empty()){
+                      CodeBuffer::instance().emit(global_Exp->true_label + ":");
+                  }else{
+                    CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                    CodeBuffer::instance().emit(global_Exp->true_label + ":");
+                  }
                   
                   globalExpStack.push(global_Exp);
                 };
@@ -526,8 +566,18 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
                global_exp_type=$$->type;
                global_Exp=dynamic_cast<ExpNode*>($$);
             }
-   | TRUE { $$ = new ExpNode("bool", "true"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
-   | FALSE { $$ = new ExpNode("bool", "false"); global_exp_type=$$->type;global_Exp=dynamic_cast<ExpNode*>($$);}
+   | TRUE { 
+            $$ = new ExpNode("bool");
+             CodeBuffer::instance().emit("br label %"+ static_cast<ExpNode*>($$)->true_label);
+            global_exp_type=$$->type;
+            global_Exp=dynamic_cast<ExpNode*>($$);
+          }
+   | FALSE {
+             $$ = new ExpNode("bool");
+              CodeBuffer::instance().emit("br label %"+ static_cast<ExpNode*>($$)->false_label);
+             global_exp_type=$$->type;
+             global_Exp=dynamic_cast<ExpNode*>($$);
+          }
    | NOT Exp 
      { 
       checkBooleanExpression($2, *tableStack);

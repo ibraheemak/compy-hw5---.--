@@ -1,0 +1,55 @@
+declare i32 @printf(i8*, ...)
+declare void @exit(i32)
+declare i32 @scanf(i8*, ...)
+@.str_zeroDiv = internal constant [23 x i8] c"Error division by zero\00"
+@global_bool_flag = global i1 false
+@.str_specifier = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
+@.int_specifier = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@.int_specifier_scan = private unnamed_addr constant [3 x i8] c"%d\00", align 1
+define void @print(i8*) {
+  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0
+  call i32 (i8*, ...) @printf(i8* %spec_ptr, i8* %0)
+  ret void
+}
+define void @printi(i32) {
+  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0
+  call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)
+  ret void
+}
+define i32 @readi() {
+  %spec_ptr = getelementptr [3 x i8], [3 x i8]* @.int_specifier_scan, i32 0, i32 0
+  %num = alloca i32
+  call i32 (i8*, ...) @scanf(i8* %spec_ptr, i32* %num)
+  %result = load i32, i32* %num
+  ret i32 %result
+}
+@.t5 = internal constant [5 x i8] c"true\00"
+define i32 @main(){
+%t0 = add i1 0, 0
+br label %label_8
+%t1 = add i1 0, 0
+br label %label_15
+%t2 = add i1 1, 0
+br label %label_21
+br i1 %t1, label %label_23, label %label_24
+label_23:
+br i1 %t2, label %label_24, label %label_24
+label_24:
+%t3 = phi i1 [ false, %label_15 ], [ %t2, %label_23 ]
+br i1 %t0, label %label_30, label %label_29
+label_29:
+br i1 %t3, label %label_30, label %label_30
+label_30:
+%t4 = phi i1 [ true, %label_7 ], [ %t3, %label_29 ]
+br i1 %t4, label %label_30, label %label_34
+label_30:
+call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t5, i32 0, i32 0))
+br label %label_33
+br i1 %t4, label %label_30, label %label_34
+label_30:
+br label %label_41
+label_34:
+br label %label_41
+label_41:
+ret i32 0
+}

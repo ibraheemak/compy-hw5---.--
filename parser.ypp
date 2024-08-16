@@ -113,80 +113,68 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            printProductionRule(5);
          }
          | Type ID ASSIGN Exp SC
-         {
+          {
+          string varName = static_cast<IdentifierStr*>($2)->id;
+          string varType = static_cast<TNode*>($1)->type;
+          string expType = $4->type;
+          checkVariableDeclaration(*tableStack, varName, yylineno);
+          checkAssignment(varType, expType, yylineno);
+          string llvmType = getLLVMType(varType);
+          string llvmVarName = "%" + varName;
+
+          if (varType == "bool" && static_cast<ExpNode*>($4)->llvm_var.empty()) {
+              string allocLabel = CodeBuffer::instance().freshLabel();
+              
+              // Emit the true label
+              CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->true_label + ":");
+              CodeBuffer::instance().emit("store i1 true, i1* @global_bool_flag");  // Or %bool_flag if using a local variable
+              CodeBuffer::instance().emit("br label %" + allocLabel);
+
+              // Emit the false label
+              CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->false_label + ":");
+              CodeBuffer::instance().emit("store i1 false, i1* @global_bool_flag");  // Or %bool_flag if using a local variable
+              CodeBuffer::instance().emit("br label %" + allocLabel);
+
+              // Emit the alloc label
+              CodeBuffer::instance().emit(allocLabel + ":");
+              CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+              CodeBuffer::instance().emit("%temp_bool = load i1, i1* @global_bool_flag");  // Or %bool_flag if using a local variable
+              CodeBuffer::instance().emit("store i1 %temp_bool, i1* " + llvmVarName);
+          } else {
+              // Handle direct expressions
+              CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+              CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
+          }
+
+          addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
+          offsettStack->update_top_offset();
+          delete static_cast<IdentifierStr*>($2);
+          delete static_cast<TNode*>($1);
+          delete $4;
+          printProductionRule(6);
+      }
+         | ID ASSIGN Exp SC
+        {
            string varName = static_cast<IdentifierStr*>($2)->id;
            string varType = static_cast<TNode*>($1)->type;
-           string expType = $4->type;
-           checkVariableDeclaration(*tableStack, varName, yylineno);
-           checkAssignment(varType, expType, yylineno);
            string llvmType = getLLVMType(varType);
-           string llvmVarName = "%" + varName;           
+           string llvmVarName = "%" + varName;
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
            
-           if (static_cast<ExpNode*>($4)->llvm_var.empty()&& varType=="bool") {
-             string trueLabel = CodeBuffer::instance().freshLabel();
-             string endLabel = CodeBuffer::instance().freshLabel();
-
-            // Emit the true label
-              CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->true_label + ":");
-              CodeBuffer::instance().emit("store i1 1, i1* " + llvmVarName);
-              CodeBuffer::instance().emit("br label %" + endLabel);
-
-            // Emit the false label
-            CodeBuffer::instance().emit(static_cast<ExpNode*>($4)->false_label + ":");
-            CodeBuffer::instance().emit("store i1 0, i1* " + llvmVarName);
-            CodeBuffer::instance().emit("br label %" + endLabel);
-
-            // Emit the end label
-            CodeBuffer::instance().emit(endLabel + ":");
-
-            } else {
-            // Handle direct expressions
-                CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
-              }
+           // Initialize with default value
+           if (varType == "bool") {
+             CodeBuffer::instance().emit("store i1 false, i1* " + llvmVarName);
+           } else if (varType == "int" || varType == "byte") {
+             CodeBuffer::instance().emit("store " + llvmType + " 0, " + llvmType + "* " + llvmVarName);
+           }
+           
+           checkVariableDeclaration(*tableStack, static_cast<IdentifierStr*>($2)->id, yylineno);
            addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
            offsettStack->update_top_offset();
            delete static_cast<IdentifierStr*>($2);
            delete static_cast<TNode*>($1);
-           delete $4;
-           printProductionRule(6);
-         }
-         | ID ASSIGN Exp SC
-         {
-           string varName = static_cast<IdentifierStr*>($1)->id;
-           string varType = getSymbolType(*tableStack, varName);
-           if (varType.empty()) {
-             output::errorUndef(yylineno, varName);
-             exit(0);
+           printProductionRule(5);
            }
-           checkAssignment(varType, $3->type, yylineno); //check12
-           string llvmType = getLLVMType(varType);
-           string llvmVarName = "%" + varName;
-           if (static_cast<ExpNode*>($3)->llvm_var.empty()&& varType=="bool") {
-             string trueLabel = CodeBuffer::instance().freshLabel();
-             string endLabel = CodeBuffer::instance().freshLabel();
-
-            // Emit the true label
-              CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->true_label + ":");
-              CodeBuffer::instance().emit("store i1 1, i1* " + llvmVarName);
-              CodeBuffer::instance().emit("br label %" + endLabel);
-
-            // Emit the false label
-            CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
-            CodeBuffer::instance().emit("store i1 0, i1* " + llvmVarName);
-            CodeBuffer::instance().emit("br label %" + endLabel);
-
-            // Emit the end label
-            CodeBuffer::instance().emit(endLabel + ":");
-
-            } else {
-            // Handle direct expressions
-                CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
-              }
-           delete static_cast<IdentifierStr*>($1);
-           delete $3;
-           printProductionRule(7);
-         }
          | Call SC { printProductionRule(8); }
          | RETURN SC 
          {
@@ -195,41 +183,49 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          }
          | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
-           ExpNode* globalExp = globalExpStack.top();
-           globalExpStack.pop();
-           if(globalExp != $3) cout << "error in global exp stack" << endl;
-
-            
-           // Emit false label
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
-
+           string endLabel = CodeBuffer::instance().freshLabel();
+           ExpNode* expNode = dynamic_cast<ExpNode*>($3);
            
-           // Emit branch to next label (end of if statement)
-           CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
-           
-
-           
-           // Emit next label (end of if statement)
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
+           if (expNode) {
+               CodeBuffer::instance().emit("br i1 " + expNode->llvm_var + ", label %" + expNode->true_label + ", label %" + expNode->false_label);
+               
+               CodeBuffer::instance().emit(expNode->true_label + ":");
+               // The true branch code is already emitted by the inner Statement
+               CodeBuffer::instance().emit("br label %" + endLabel);
+               
+               CodeBuffer::instance().emit(expNode->false_label + ":");
+               CodeBuffer::instance().emit("br label %" + endLabel);
+               
+               CodeBuffer::instance().emit(endLabel + ":");
+           } else {
+               cerr << "Error: Invalid expression type for if statement" << endl;
+           }
            
            printProductionRule(10);
            delete $3;
-         }
+         }     
          | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE
          {
-           ExpNode* globalExp = globalExpStack.top();
-           globalExpStack.pop();
-           if(globalExp != $3) cout << "error in global exp stack" << endl;
+           string endLabel = CodeBuffer::instance().freshLabel();
+           ExpNode* expNode = dynamic_cast<ExpNode*>($3);
            
-           // Emit branch to next label (end of if-else statement)
-           CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
+           if (expNode) {
+               CodeBuffer::instance().emit("br i1 " + expNode->llvm_var + ", label %" + expNode->true_label + ", label %" + expNode->false_label);
+               
+               CodeBuffer::instance().emit(expNode->true_label + ":");
+               // The true branch code is already emitted by the inner Statement
+               CodeBuffer::instance().emit("br label %" + endLabel);
+               
+               CodeBuffer::instance().emit(expNode->false_label + ":");
+               CodeBuffer::instance().emit("br label %" + endLabel);
+               
+               CodeBuffer::instance().emit(endLabel + ":");
+           } else {
+               cerr << "Error: Invalid expression type for if statement" << endl;
+           }
            
-           // Emit next label (end of if-else statement)
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
-           
-           printProductionRule(11);
+           printProductionRule(10);
            delete $3;
-         
          }
          | WHILE LPAREN Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
          {
@@ -567,17 +563,32 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
                global_Exp=dynamic_cast<ExpNode*>($$);
             }
    | TRUE { 
-            $$ = new ExpNode("bool");
-             CodeBuffer::instance().emit("br label %"+ static_cast<ExpNode*>($$)->true_label);
-            global_exp_type=$$->type;
-            global_Exp=dynamic_cast<ExpNode*>($$);
-          }
-   | FALSE {
-             $$ = new ExpNode("bool");
-              CodeBuffer::instance().emit("br label %"+ static_cast<ExpNode*>($$)->false_label);
-             global_exp_type=$$->type;
-             global_Exp=dynamic_cast<ExpNode*>($$);
-          }
+     string resultVar = freshVar();
+     $$ = new ExpNode("bool", resultVar);
+     ExpNode* expNode = dynamic_cast<ExpNode*>($$);
+     if (expNode) {
+         expNode->true_label = CodeBuffer::instance().freshLabel();
+         expNode->false_label = CodeBuffer::instance().freshLabel();
+         CodeBuffer::instance().emit(resultVar + " = add i1 1, 0");
+         CodeBuffer::instance().emit("br label %" + expNode->true_label);
+     }
+     global_exp_type = "bool";
+     global_Exp = expNode;
+   }
+   | FALSE
+   {
+     string resultVar = freshVar();
+     $$ = new ExpNode("bool", resultVar);
+     ExpNode* expNode = dynamic_cast<ExpNode*>($$);
+     if (expNode) {
+         expNode->true_label = CodeBuffer::instance().freshLabel();
+         expNode->false_label = CodeBuffer::instance().freshLabel();
+         CodeBuffer::instance().emit(resultVar + " = add i1 0, 0");
+         CodeBuffer::instance().emit("br label %" + expNode->false_label);
+     }
+     global_exp_type = "bool";
+     global_Exp = expNode;
+   }
    | NOT Exp 
      { 
       checkBooleanExpression($2, *tableStack);
@@ -589,28 +600,70 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | Exp AND Exp 
   { 
-    checkBooleanExpression($1, *tableStack);
-    checkBooleanExpression($3, *tableStack);
-    emitBooleanAnd(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-    $$ = new ExpNode("bool");
-    static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($3)->true_label;
-    static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($1)->false_label;
-    printProductionRule(29);
-    global_exp_type = $$->type;
-    global_Exp = dynamic_cast<ExpNode*>($$);
-  }
+     checkBooleanExpression($1, *tableStack);
+     checkBooleanExpression($3, *tableStack);
+     
+     string resultVar = freshVar();
+     string andRhsLabel = CodeBuffer::instance().freshLabel();
+     string andEndLabel = CodeBuffer::instance().freshLabel();
+     
+     ExpNode* left = dynamic_cast<ExpNode*>($1);
+     ExpNode* right = dynamic_cast<ExpNode*>($3);
+     
+     if (left && right) {
+         CodeBuffer::instance().emit("br i1 " + left->llvm_var + ", label %" + andRhsLabel + ", label %" + andEndLabel);
+         
+         CodeBuffer::instance().emit(andRhsLabel + ":");
+         CodeBuffer::instance().emit("br i1 " + right->llvm_var + ", label %" + andEndLabel + ", label %" + andEndLabel);
+         
+         CodeBuffer::instance().emit(andEndLabel + ":");
+         CodeBuffer::instance().emit(resultVar + " = phi i1 [ false, %" + left->false_label + " ], [ " + right->llvm_var + ", %" + andRhsLabel + " ]");
+     } else {
+         cerr << "Error: Invalid expression type for AND operation" << endl;
+     }
+     
+     $$ = new ExpNode("bool", resultVar);
+     ExpNode* expNode = dynamic_cast<ExpNode*>($$);
+     if (expNode) {
+         expNode->true_label = andEndLabel;
+         expNode->false_label = CodeBuffer::instance().freshLabel();
+     }
+     global_exp_type = "bool";
+     global_Exp = expNode;
+   }
 | Exp OR Exp 
   { 
-    checkBooleanExpression($1, *tableStack);
-    checkBooleanExpression($3, *tableStack);
-    emitBooleanOr(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-    $$ = new ExpNode("bool");
-    static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($1)->true_label;
-    static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($3)->false_label;
-    printProductionRule(30);
-    global_exp_type = $$->type;
-    global_Exp = dynamic_cast<ExpNode*>($$);
-  }
+     checkBooleanExpression($1, *tableStack);
+     checkBooleanExpression($3, *tableStack);
+     
+     string resultVar = freshVar();
+     string orRhsLabel = CodeBuffer::instance().freshLabel();
+     string orEndLabel = CodeBuffer::instance().freshLabel();
+     
+     ExpNode* left = dynamic_cast<ExpNode*>($1);
+     ExpNode* right = dynamic_cast<ExpNode*>($3);
+     
+     if (left && right) {
+         CodeBuffer::instance().emit("br i1 " + left->llvm_var + ", label %" + orEndLabel + ", label %" + orRhsLabel);
+         
+         CodeBuffer::instance().emit(orRhsLabel + ":");
+         CodeBuffer::instance().emit("br i1 " + right->llvm_var + ", label %" + orEndLabel + ", label %" + orEndLabel);
+         
+         CodeBuffer::instance().emit(orEndLabel + ":");
+         CodeBuffer::instance().emit(resultVar + " = phi i1 [ true, %" + left->true_label + " ], [ " + right->llvm_var + ", %" + orRhsLabel + " ]");
+     } else {
+         cerr << "Error: Invalid expression type for OR operation" << endl;
+     }
+     
+     $$ = new ExpNode("bool", resultVar);
+     ExpNode* expNode = dynamic_cast<ExpNode*>($$);
+     if (expNode) {
+         expNode->true_label = orEndLabel;
+         expNode->false_label = CodeBuffer::instance().freshLabel();
+     }
+     global_exp_type = "bool";
+     global_Exp = expNode;
+   }
    | Exp equality Exp 
      { 
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);
@@ -708,33 +761,33 @@ void initBuiltInFunctions() {
     CodeBuffer::instance().emitGlobal("}");
 }
 
-int main(){
-    // yydebug = 1; 
-    CodeBuffer::instance().emit("define i32 @main(){");
-    CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
-    CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
-    CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
-    CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
+// int main(){
+//     // yydebug = 1; 
+//     CodeBuffer::instance().emit("define i32 @main(){");
+//     CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
+//     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
+//     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
+//     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
 
 
-    // defining the built in functions 
-    initBuiltInFunctions();
+//     // defining the built in functions 
+//     initBuiltInFunctions();
 
-    // yyparse
-    yyparse();
-    // yyparse
+//     // yyparse
+//     yyparse();
+//     // yyparse
 
-    exitScope(*tableStack);
+//     exitScope(*tableStack);
 
-    CodeBuffer::instance().emit("ret i32 0");
-    CodeBuffer::instance().emit("}");
+//     CodeBuffer::instance().emit("ret i32 0");
+//     CodeBuffer::instance().emit("}");
 
-    CodeBuffer::instance().printGlobalBuffer();
-    CodeBuffer::instance().printCodeBuffer();
+//     CodeBuffer::instance().printGlobalBuffer();
+//     CodeBuffer::instance().printCodeBuffer();
     
-    return 0;
+//     return 0;
 
-}
+// }
 
 void yyerror(const char*){
     errorSyn(yylineno);

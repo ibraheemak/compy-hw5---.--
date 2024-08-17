@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
 
     // Run the parser
      initBuiltInFunctions();
+    CodeBuffer::instance().emit("entry_label:");
     yyparse();
 
     CodeBuffer::instance().emit("ret i32 0");

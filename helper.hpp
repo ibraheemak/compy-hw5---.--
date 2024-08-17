@@ -176,24 +176,25 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 //_________________________________________boolean_________________________________________
 
 
-void emitBooleanOr(ExpNode* le, ExpNode* re, ExpNode* result) {
-    result->true_label = le->true_label;
-    result->false_label = re->false_label;
-    
-    string second_exp_label = CodeBuffer::instance().freshLabel();
-    CodeBuffer::instance().emit(le->false_label + ":");
-    CodeBuffer::instance().emit("br label %" + second_exp_label);
-    CodeBuffer::instance().emit(second_exp_label + ":");
+void emitBooleanAnd(ExpNode* le, ExpNode* re, ExpNode* result) {
+  string labelTrue = re->true_label;
+    result -> true_label = labelTrue;
+    string labelFalse = re->false_label;
+    result -> false_label = labelFalse;
+    // Emit code to branch based on the left operand
+    CodeBuffer::instance().emit(static_cast<ExpNode*>(le)->true_label +":");
+    CodeBuffer::instance().emit("br label %" + labelTrue);
 }
 
-void emitBooleanAnd(ExpNode* le, ExpNode* re, ExpNode* result) {
-    result->true_label = re->true_label;
-    result->false_label = le->false_label;
-    
-    string second_exp_label = CodeBuffer::instance().freshLabel();
-    CodeBuffer::instance().emit(le->true_label + ":");
-    CodeBuffer::instance().emit("br label %" + second_exp_label);
-    CodeBuffer::instance().emit(second_exp_label + ":");
+
+void emitBooleanOr(ExpNode* le, ExpNode* re, ExpNode* result) {
+    string labelTrue = re->true_label;
+    result -> true_label = labelTrue;
+    string labelFalse = re->false_label;
+    result -> false_label = labelFalse;
+    // Emit code to branch based on the left operand
+    CodeBuffer::instance().emit(static_cast<ExpNode*>(le)->true_label +":");
+    CodeBuffer::instance().emit("br label %" + labelTrue);
 }
 
 void emitBooleanNot(ExpNode* exp, ExpNode* result) {

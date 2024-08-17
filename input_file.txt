@@ -1,4 +1,4 @@
-if(false or false)
+if(false or true or false)
     {
         print("true");
     }

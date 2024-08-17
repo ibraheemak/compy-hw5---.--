@@ -1,15 +1,21 @@
 DEBUG: Emitted: define i32 @main(){
-DEBUG: Emitted: br label %label_8
-DEBUG: Emitted: br label %label_15
-DEBUG: Emitted: label_8:
-DEBUG: Emitted: br label %label_19
-DEBUG: Emitted: label_19:
-DEBUG: Emitted: label_7:
-DEBUG: Emitted: call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
+DEBUG: Emitted: br label %label_5
+DEBUG: Emitted: label_5:
+DEBUG: Emitted: br label %label_9
+DEBUG: Emitted: label_4:
+DEBUG: Emitted: br label %label_9
+DEBUG: Emitted: label_10:
 DEBUG: Emitted: br label %label_18
-DEBUG: Emitted: br label %label_26
-DEBUG: Emitted: label_15:
-DEBUG: Emitted: label_26:
+DEBUG: Emitted: label_9:
+DEBUG: Emitted: br label %label_17
+DEBUG: Emitted: label_17:
+DEBUG: Emitted: call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
+DEBUG: Emitted: br label %label_22
+DEBUG: Emitted: AAAAAAAAAAAAAAAAAA
+DEBUG: Emitted: label_18:
+DEBUG: Emitted: br label %label_22
+DEBUG: Emitted: AAAAAAAAAASSSSAAAAAAAAASADSACASDA
+DEBUG: Emitted: label_22:
 DEBUG: Emitted: ret i32 0
 DEBUG: Emitted: }
 declare i32 @printf(i8*, ...)
@@ -39,16 +45,22 @@ define i32 @readi() {
 }
 @.t0 = internal constant [5 x i8] c"true\00"
 define i32 @main(){
-br label %label_8
-br label %label_15
-label_8:
-br label %label_19
-label_19:
-label_7:
-call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
+br label %label_5
+label_5:
+br label %label_9
+label_4:
+br label %label_9
+label_10:
 br label %label_18
-br label %label_26
-label_15:
-label_26:
+label_9:
+br label %label_17
+label_17:
+call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
+br label %label_22
+AAAAAAAAAAAAAAAAAA
+label_18:
+br label %label_22
+AAAAAAAAAASSSSAAAAAAAAASADSACASDA
+label_22:
 ret i32 0
 }

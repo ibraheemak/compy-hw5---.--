@@ -181,20 +181,15 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            checkReturnStatement(*tableStack, "void", yylineno);
            printProductionRule(9);
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN  M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
-           
-           // The true branch (Statement) has already been emitted
-           
-           // Emit branch to next label after true branch
-           string next_label = CodeBuffer::instance().freshLabel();
-           CodeBuffer::instance().emit("br label %" + next_label);
-           
-           // Emit the false label
+
+           string next_label = static_cast<ExpNode*>($3)->next_label;
            CodeBuffer::instance().emit(globalExp->false_label + ":");
-           
+           CodeBuffer::instance().emit("br label %" + next_label);
+           CodeBuffer::instance().emit("AAAAAAAAAASSSSAAAAAAAAASADSACASDA");
            // Emit the next label where both branches converge
            CodeBuffer::instance().emit(next_label + ":");
            
@@ -301,6 +296,7 @@ CLOSE_SCOPE: %empty
              if (!globalExpStack.empty()) {
                ExpNode* globalExp = globalExpStack.top();
                CodeBuffer::instance().emit("br label %" + globalExp->next_label);
+               CodeBuffer::instance().emit("AAAAAAAAAAAAAAAAAA" );
              }
            };
 
@@ -545,16 +541,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
             }
    | TRUE { 
        $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label = CodeBuffer::instance().freshLabel();
-       static_cast<ExpNode*>($$)->false_label = CodeBuffer::instance().freshLabel();
        CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->true_label);
        global_exp_type = $$->type;
        global_Exp = static_cast<ExpNode*>($$);
      }
    | FALSE {
        $$ = new ExpNode("bool");
-       static_cast<ExpNode*>($$)->true_label = CodeBuffer::instance().freshLabel();
-       static_cast<ExpNode*>($$)->false_label = CodeBuffer::instance().freshLabel();
        CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->false_label);
        global_exp_type = $$->type;
        global_Exp = static_cast<ExpNode*>($$);
@@ -568,26 +560,27 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_exp_type = $$->type;
        global_Exp = static_cast<ExpNode*>($$);
      }
-   | Exp AND Exp 
-  { 
-       checkBooleanExpression($1, *tableStack);
-       checkBooleanExpression($3, *tableStack);
-       $$ = new ExpNode("bool");
-       emitBooleanAnd(static_cast<ExpNode*>($1), static_cast<ExpNode*>($3), static_cast<ExpNode*>($$));
-       printProductionRule(29);
-       global_exp_type = $$->type;
-       global_Exp = static_cast<ExpNode*>($$);
-     }
-| Exp OR Exp 
-  { 
-       checkBooleanExpression($1, *tableStack);
-       checkBooleanExpression($3, *tableStack);
-       $$ = new ExpNode("bool");
-       emitBooleanOr(static_cast<ExpNode*>($1), static_cast<ExpNode*>($3), static_cast<ExpNode*>($$));
-       printProductionRule(30);
-       global_exp_type = $$->type;
-       global_Exp = static_cast<ExpNode*>($$);
-     }
+  | Exp OR {CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->false_label + ":");} Exp 
+    { 
+      checkBooleanExpression($1, *tableStack);
+      checkBooleanExpression($4, *tableStack);
+      // maybe i shoudlve let the function return a new node so we wont create unnecessary labels 
+      $$ = new ExpNode("bool");
+      emitBooleanOr(static_cast<ExpNode*>($1), static_cast<ExpNode*>($4), static_cast<ExpNode*>($$));
+      printProductionRule(30);
+      global_exp_type = $$->type;
+      global_Exp = static_cast<ExpNode*>($$);
+    }
+    | Exp AND {CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->true_label + ":");} Exp 
+    { 
+      checkBooleanExpression($1, *tableStack);
+      checkBooleanExpression($4, *tableStack);
+      $$ = new ExpNode("bool");
+      emitBooleanAnd(static_cast<ExpNode*>($1), static_cast<ExpNode*>($4), static_cast<ExpNode*>($$));
+      printProductionRule(29);
+      global_exp_type = $$->type;
+      global_Exp = static_cast<ExpNode*>($$);
+    }
    | Exp equality Exp 
      { 
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);
@@ -636,23 +629,8 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
     global_Exp = dynamic_cast<ExpNode*>($$);
      }
    ;
-    // Exp: LPAREN Exp RPAREN{printProductionRule(19);}
-    //     |Exp additive Exp{printProductionRule(20);}
-    //     |Exp multiplicative Exp{printProductionRule(20);}
-    //     |ID{printProductionRule(21);}
-    //     |Call{printProductionRule(22);}
-    //     |NUM{printProductionRule(23);}
-    //     |NUM B{printProductionRule(24);}
-    //     |STRING{printProductionRule(25);}
-    //     |TRUE{printProductionRule(26);}
-    //     |FALSE{printProductionRule(27);}
-    //     |NOT Exp{printProductionRule(28);}
-    //     |Exp AND Exp{printProductionRule(29);}
-    //     |Exp OR Exp{printProductionRule(30);}
-    //     |Exp equality Exp{printProductionRule(31);}
-    //     |Exp relational Exp{printProductionRule(31);}
-    //     |LPAREN Type RPAREN Exp{printProductionRule(32);};
 
+ 
 
 %%
 

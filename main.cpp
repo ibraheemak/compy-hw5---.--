@@ -52,45 +52,56 @@ int main(int argc, char* argv[]) {
 
 
 /* another approach for the problem of bool branching label assignments  
-ID ASSIGN Exp SC
-{
-    string varName = static_cast<IdentifierStr*>($1)->id;
-    string varType = getSymbolType(*tableStack, varName);
-    if (varType.empty()) {
-        output::errorUndef(yylineno, varName);
-        exit(0);
-    }
-    checkAssignment(varType, $3->type, yylineno);
-    string llvmType = getLLVMType(varType);
-    string llvmVarName = "%" + varName;
+Statement: ID ASSIGN Exp SC
+        {
+           string varName = static_cast<IdentifierStr*>($1)->id;
+           string varType = getSymbolType(*tableStack, varName);
+           
+           if(varType.empty() || varType=="function") {
+             output::errorUndef(yylineno, varName);
+             exit(0);
+           }
 
-    // Always allocate the variable
-    CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+           checkAssignment(varType, $3->type, yylineno);
 
-    if (varType == "bool" && static_cast<ExpNode*>($3)->llvm_var.empty()) {
-        string endLabel = CodeBuffer::instance().freshLabel();
-        string phiVar = freshVar();
+           string llvmType = getLLVMType(varType);
+           string llvmVarName = "%" + varName;
+           
+           // Create labels for branching
+           string trueLabel = CodeBuffer::instance().freshLabel();
+           string falseLabel = CodeBuffer::instance().freshLabel();
+           string endLabel = CodeBuffer::instance().freshLabel();
 
-        // Emit the true label
-        CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->true_label + ":");
-        CodeBuffer::instance().emit("br label %" + endLabel);
+           // Emit branching code based on the expression type
+           if ($3->type == "bool") {
+               CodeBuffer::instance().emit("br i1 " + $3->llvm_var + ", label %" + trueLabel + ", label %" + falseLabel);
+           } else {
+               CodeBuffer::instance().emit("br label %" + endLabel);
+           }
 
-        // Emit the false label
-        CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->false_label + ":");
-        CodeBuffer::instance().emit("br label %" + endLabel);
+           // Emit true label for boolean expressions
+           if ($3->type == "bool") {
+               CodeBuffer::instance().emit(trueLabel + ":");
+               CodeBuffer::instance().emit("br label %" + endLabel);
 
-        // Emit the end label with phi instruction
-        CodeBuffer::instance().emit(endLabel + ":");
-        CodeBuffer::instance().emit(phiVar + " = phi i1 [ 1, %" + static_cast<ExpNode*>($3)->true_label + 
-                                    " ], [ 0, %" + static_cast<ExpNode*>($3)->false_label + " ]");
-        CodeBuffer::instance().emit("store i1 " + phiVar + ", i1* " + llvmVarName);
-    } else {
-        // Handle direct expressions
-        CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
-    }
+               // Emit false label for boolean expressions
+               CodeBuffer::instance().emit(falseLabel + ":");
+               CodeBuffer::instance().emit("br label %" + endLabel);
+           }
 
-    delete static_cast<IdentifierStr*>($1);
-    delete $3;
-    printProductionRule(7);
-}
+           // Emit end label and PHI node for boolean expressions
+           CodeBuffer::instance().emit(endLabel + ":");
+           if ($3->type == "bool") {
+               string phiVar = freshVar();
+               CodeBuffer::instance().emit(phiVar + " = phi i1 [ true, %" + trueLabel + " ], [ false, %" + falseLabel + " ]");
+               $3->llvm_var = phiVar;
+           }
+
+           // Store the value in the variable
+           CodeBuffer::instance().emit("store " + llvmType + " " + $3->llvm_var + ", " + llvmType + "* " + llvmVarName);
+
+           delete static_cast<IdentifierStr*>($1);
+           delete $3;
+           printProductionRule(7);
+        }
 */

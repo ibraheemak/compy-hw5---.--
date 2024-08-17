@@ -1,0 +1,25 @@
+define i32 @main() {
+entry:
+  ; First 'false' evaluation
+  %cond1 = add i1 0, 0
+  br i1 %cond1, label %or_true, label %or_second
+
+or_second:
+  ; Second 'false' evaluation
+  %cond2 = add i1 0, 0
+  br i1 %cond2, label %or_true, label %or_false
+
+or_true:
+  call void @print(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str_true, i32 0, i32 0))
+  br label %end
+
+or_false:
+  br label %end
+
+end:
+  ret i32 0
+}
+
+@.str_true = private unnamed_addr constant [5 x i8] c"true\00", align 1
+
+declare void @print(i8*)

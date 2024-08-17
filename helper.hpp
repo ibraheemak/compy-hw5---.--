@@ -175,84 +175,30 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 
 //_________________________________________boolean_________________________________________
 
-// void emitBooleanAnd(ExpNode* le, ExpNode* re) {
-//     string labelEvalRight = CodeBuffer::instance().freshLabel();
-//     string labelTrue = re->true_label;
-//     string labelFalse = le->false_label;
-//     // Check left operand
-//     CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelEvalRight + ", label %" + labelFalse);
 
-//     // Evaluate right operand
-//     CodeBuffer::instance().emit(labelEvalRight + ":");
-//     CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + labelFalse);
-// }
-
-
-// void emitBooleanOr(ExpNode* le, ExpNode* re) {
-
-//     string labelEvalRight = CodeBuffer::instance().freshLabel();
-//     string labelTrue = le->true_label;
-//     string labelFalse = re->false_label;
-
-//     // Emit code to branch based on the left operand
-//     CodeBuffer::instance().emit("br i1 " + le->llvm_var + ", label %" + labelTrue + ", label %" + labelEvalRight);
-
-//     // Emit code for evaluating the right operand if the left one is false
-//     CodeBuffer::instance().emit(labelEvalRight + ":");
-//     CodeBuffer::instance().emit("br i1 " + re->llvm_var + ", label %" + labelTrue + ", label %" + labelFalse);
-// }
-
-void emitBooleanOr(ExpNode* left, ExpNode* right) {
-    string checkRight = CodeBuffer::instance().freshLabel();
-    string endLabel = CodeBuffer::instance().freshLabel();
-
-    // Evaluate left operand
-    CodeBuffer::instance().emit("br i1 " + left->llvm_var + ", label %" + left->true_label + ", label %" + checkRight);
-
-    // Check right operand
-    CodeBuffer::instance().emit(checkRight + ":");
-    CodeBuffer::instance().emit("br i1 " + right->llvm_var + ", label %" + right->true_label + ", label %" + right->false_label);
-
-    // True label (for both left and right)
-    CodeBuffer::instance().emit(left->true_label + ":");
-    CodeBuffer::instance().emit("br label %" + endLabel);
-
-    // False label (only if both are false)
-    CodeBuffer::instance().emit(right->false_label + ":");
-    CodeBuffer::instance().emit("br label %" + endLabel);
-
-    // End label
-    CodeBuffer::instance().emit(endLabel + ":");
+void emitBooleanOr(ExpNode* le, ExpNode* re, ExpNode* result) {
+    result->true_label = le->true_label;
+    result->false_label = re->false_label;
+    
+    string second_exp_label = CodeBuffer::instance().freshLabel();
+    CodeBuffer::instance().emit(le->false_label + ":");
+    CodeBuffer::instance().emit("br label %" + second_exp_label);
+    CodeBuffer::instance().emit(second_exp_label + ":");
 }
-void emitBooleanAnd(ExpNode* left, ExpNode* right) {
-    string checkRight = CodeBuffer::instance().freshLabel();
-    string endLabel = CodeBuffer::instance().freshLabel();
 
-    // Evaluate left operand
-    CodeBuffer::instance().emit("br i1 " + left->llvm_var + ", label %" + checkRight + ", label %" + left->false_label);
-
-    // Check right operand
-    CodeBuffer::instance().emit(checkRight + ":");
-    CodeBuffer::instance().emit("br i1 " + right->llvm_var + ", label %" + right->true_label + ", label %" + right->false_label);
-
-    // False label (for both left and right)
-    CodeBuffer::instance().emit(left->false_label + ":");
-    CodeBuffer::instance().emit("br label %" + endLabel);
-
-    // True label (only if both are true)
-    CodeBuffer::instance().emit(right->true_label + ":");
-    CodeBuffer::instance().emit("br label %" + endLabel);
-
-    // End label
-    CodeBuffer::instance().emit(endLabel + ":");
+void emitBooleanAnd(ExpNode* le, ExpNode* re, ExpNode* result) {
+    result->true_label = re->true_label;
+    result->false_label = le->false_label;
+    
+    string second_exp_label = CodeBuffer::instance().freshLabel();
+    CodeBuffer::instance().emit(le->true_label + ":");
+    CodeBuffer::instance().emit("br label %" + second_exp_label);
+    CodeBuffer::instance().emit(second_exp_label + ":");
 }
-void emitBooleanNot(ExpNode* exp) {
-    // Swap true and false labels
-    string temp = exp->true_label;
-    exp->true_label = exp->false_label;
-    exp->false_label = temp;
 
-    // No need to emit any LLVM code, just swap labels
+void emitBooleanNot(ExpNode* exp, ExpNode* result) {
+    result->true_label = exp->false_label;
+    result->false_label = exp->true_label;
 }
 
 

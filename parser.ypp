@@ -201,12 +201,13 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
            if(globalExp != $3) cout << "error in global exp stack" << endl;
-           
-           // Emit branch to next label (end of if-else statement)
-           CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($3)->next_label);
-           
-           // Emit next label (end of if-else statement)
-           CodeBuffer::instance().emit(static_cast<ExpNode*>($3)->next_label + ":");
+
+            string next_label = static_cast<ExpNode*>($3)->next_label;
+           CodeBuffer::instance().emit(globalExp->next_label + ":");
+          //  CodeBuffer::instance().emit("br label %" + next_label);
+           CodeBuffer::instance().emit("AAAAAAAAAASSSSAAAAAAAAASADSACASDA");
+           // Emit the next label where both branches converge
+           CodeBuffer::instance().emit(next_label + ":");
            
            printProductionRule(11);
            delete $3;
@@ -333,7 +334,7 @@ M_ADD_FALSE_LABEL: %empty
                    ExpNode* globalExp = globalExpStack.top();
                    
                    // Emit branch to next label (end of if-else statement)
-                   CodeBuffer::instance().emit("br label %" + globalExp->next_label);
+                  //  CodeBuffer::instance().emit("br label %" + globalExp->next_label);
                    
                    // Emit the false label (start of else block)
                    CodeBuffer::instance().emit(globalExp->false_label + ":");
@@ -348,51 +349,6 @@ Call: ID LPAREN Exp RPAREN
       // changing checkFunctionCall
       // $$ = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
       functions* func = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
-      /*
-      // Check if the function exists
-      tableEntry* entry = nullptr;
-      for (const auto& e : tableStack->ParentScope->scope) {
-        if (e->name == funcName) {
-          entry = e;
-          break;
-        }
-      }
-      
-      if (!entry) {
-        output::errorUndefFunc(yylineno, funcName);
-        exit(0);
-      }
-    //  cout<<"entry->type is : "<<entry->type<<endl;////////delete
-      // Check if the entry is a function
-      if (entry->type != "function") {
-        output::errorUndefFunc(yylineno, funcName);
-        exit(0);
-      }
-
-      // Now we know it's a function, we can safely cast it
-       functions* func = dynamic_cast<functions*>(entry);
-    if (!func) {
-        //for tests: cout<<"debug line 212 parser.ypp"<<endl;/////delete
-        output::errorUndefFunc(yylineno, funcName);
-        exit(0);
-    }
-
-    */
-
-      /*
-      bool matchFound = false;
-        for (const auto& paramType : func->all_arg) {
-            if (isTypeCompatible(paramType, $3->type)) {
-                matchFound = true;
-                break;
-            }
-        }
-
-        if (!matchFound) {
-            output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
-            exit(0);
-        }
-      */
      if (!isTypeCompatible(func->all_arg[0], $3->type)) {
     output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
     exit(0);

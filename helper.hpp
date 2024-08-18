@@ -177,20 +177,20 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
 
 
 void emitBooleanAnd(ExpNode* le, ExpNode* re, ExpNode* result) {
-  string labelTrue = re->true_label;
-    result -> true_label = labelTrue;
+    string labelTrue = re->true_label;
     string labelFalse = re->false_label;
+    result -> true_label = labelTrue;
     result -> false_label = labelFalse;
     // Emit code to branch based on the left operand
-    CodeBuffer::instance().emit(static_cast<ExpNode*>(le)->true_label +":");
-    CodeBuffer::instance().emit("br label %" + labelTrue);
+    CodeBuffer::instance().emit(static_cast<ExpNode*>(le)->false_label +":");
+    CodeBuffer::instance().emit("br label %" + labelFalse);
 }
 
 
 void emitBooleanOr(ExpNode* le, ExpNode* re, ExpNode* result) {
     string labelTrue = re->true_label;
-    result -> true_label = labelTrue;
     string labelFalse = re->false_label;
+    result -> true_label = labelTrue;
     result -> false_label = labelFalse;
     // Emit code to branch based on the left operand
     CodeBuffer::instance().emit(static_cast<ExpNode*>(le)->true_label +":");

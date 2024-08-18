@@ -1,4 +1,7 @@
-if(false or true or false)
+if(false or true and true)
     {
         print("true");
+    }
+else{
+        print("false");
     }

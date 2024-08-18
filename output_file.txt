@@ -1,27 +1,3 @@
-DEBUG: Emitted: define i32 @main(){
-DEBUG: Emitted: entry_label:
-DEBUG: Emitted: br label %label_5
-DEBUG: Emitted: label_5:
-DEBUG: Emitted: br label %label_9
-DEBUG: Emitted: label_9:
-DEBUG: Emitted: br label %label_14
-DEBUG: Emitted: label_10:
-DEBUG: Emitted: br label %label_15
-DEBUG: Emitted: label_4:
-DEBUG: Emitted: br label %label_14
-DEBUG: Emitted: label_14:
-DEBUG: Emitted: call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
-DEBUG: Emitted: br label %label_22
-DEBUG: Emitted: AAAAAAAAAAAAAAAAAA
-DEBUG: Emitted: br label %label_22
-DEBUG: Emitted: label_15:
-DEBUG: Emitted: call void @print(i8* getelementptr ([6 x i8], [6 x i8]* @.t1, i32 0, i32 0))
-DEBUG: Emitted: br label %label_22
-DEBUG: Emitted: AAAAAAAAAAAAAAAAAA
-DEBUG: Emitted: br label %label_22
-DEBUG: Emitted: label_22:
-DEBUG: Emitted: ret i32 0
-DEBUG: Emitted: }
 declare i32 @printf(i8*, ...)
 declare void @exit(i32)
 declare i32 @scanf(i8*, ...)
@@ -47,29 +23,40 @@ define i32 @readi() {
   %result = load i32, i32* %num
   ret i32 %result
 }
-@.t0 = internal constant [5 x i8] c"true\00"
-@.t1 = internal constant [6 x i8] c"false\00"
+@.t11 = internal constant [2 x i8] c"*\00"
 define i32 @main(){
-entry_label:
-br label %label_5
-label_5:
-br label %label_9
-label_9:
-br label %label_14
-label_10:
-br label %label_15
-label_4:
-br label %label_14
+%i = alloca i8
+store i8 , i8* %i
+%t0 = load i8, i8* %i
+%t1 = add i32 0, 10
+%t3 = zext i8 %t0 to i32
+%t2 = icmp slt i32 %t3, %t1
 label_14:
-call void @print(i8* getelementptr ([5 x i8], [5 x i8]* @.t0, i32 0, i32 0))
-br label %label_22
-AAAAAAAAAAAAAAAAAA
-br label %label_22
-label_15:
-call void @print(i8* getelementptr ([6 x i8], [6 x i8]* @.t1, i32 0, i32 0))
-br label %label_22
-AAAAAAAAAAAAAAAAAA
-br label %label_22
-label_22:
+br i1 %t2, label %label_11, label %label_12
+label_11:
+%t4 = load i8, i8* %i
+call void @printi(i8 %t4)
+%t5 = load i8, i8* %i
+%t6 = add i32 0, 1
+%t8 = zext i8 %t5 to i32
+%t7 = add i32 %t8, %t6
+%t9 = add i32 0, 10
+%t10 = icmp slt i32 %t7, %t9
+br i1 %t10, label %label_33, label %label_34
+label_33:
+call void @print(i8* getelementptr ([2 x i8], [2 x i8]* @.t11, i32 0, i32 0))
+br label %label_35
+label_34:
+br label %label_35
+label_35:
+%t12 = load i8, i8* %i
+%t14 = zext i8 %t12 to i32
+%t15 = zext i8  to i32
+%t13 = add i8 %t14, %t15
+%t16 = trunc i32 %t13 to i8
+store bug at getLLVMType %t16, bug at getLLVMType* %i
+br label %label_55
+label_12:
+label_56:
 ret i32 0
 }

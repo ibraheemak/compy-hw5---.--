@@ -10,6 +10,7 @@ class TNode {
 public:
     string type;
     string llvm_var;
+
     TNode() = default;
     TNode(const string &type) : type(type) {}
     TNode(const string &type, const string &llvm_var) : type(type), llvm_var(llvm_var) {}
@@ -71,16 +72,19 @@ public:
     string true_label;
     string false_label;
     string next_label; //it should be for statement but this easer
+     string exp_startLabel;
     int string_length;
     ExpNode(const string &type,int string_length = 0) : TNode(type),string_length(string_length) {
         true_label=CodeBuffer::instance().freshLabel();
         false_label=CodeBuffer::instance().freshLabel();
         next_label=CodeBuffer::instance().freshLabel();
+         exp_startLabel=CodeBuffer::instance().freshLabel();
     }
     ExpNode(const string &type,const string &llvm_var,int string_length = 0) : TNode(type,llvm_var),string_length(string_length) {
         true_label=CodeBuffer::instance().freshLabel();
         false_label=CodeBuffer::instance().freshLabel();
         next_label=CodeBuffer::instance().freshLabel();
+        exp_startLabel=CodeBuffer::instance().freshLabel();
     }
 };
 

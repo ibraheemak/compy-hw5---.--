@@ -19,7 +19,7 @@ extern FILE* yyin;
 using namespace std;
 
 // Global instances
-
+/*
 int main(int argc, char* argv[]) {
     //for tests: std::cout << "Debug: Starting program execution" << std::endl;
     CodeBuffer::instance().emit("define i32 @main(){");

@@ -1,8 +1,17 @@
-    byte i = 0b;
-    while (i < 10) {
-        printi(i);
-        if (i+1 < 10)
-            print("*");
-        i = i + 1b;
+
+	bool val=true;
+        if (val)
+		print("val is true");
+	else {
+		print("val is false");
+	}
+
+	if(true)
+    {
+        print("true");
     }
-    print("*");
+
+    if(false or false and  true)
+    {
+        print("true");
+    }

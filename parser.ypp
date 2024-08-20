@@ -22,6 +22,7 @@
     #include "helper.hpp"
     #include <stack>
     stack<ExpNode*> globalExpStack;
+    std::stack<ExpNode*> loopEntryLabels; 
 
 %}
 
@@ -83,7 +84,8 @@ Statements: Statement { printProductionRule(2);
               } ///////delete
 
           ;
-
+// need to check assignments if all check the same things, each one cover one check out of many
+// int to bool or bool to int !!!
 Statement: LBRACE M_NEW_SCOPE Statements RBRACE 
          {
            printProductionRule(4);
@@ -142,9 +144,16 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
               CodeBuffer::instance().emit("store i1 %temp_bool, i1* " + llvmVarName);
           } else {
               // Handle direct expressions
-              CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
-              CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
-          }
+              if (varType == "int" && expType == "byte") {
+                  string extendedVar = freshVar();
+                  CodeBuffer::instance().emit(extendedVar + " = zext i8 " + $4->llvm_var + " to i32");
+                  CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+                  CodeBuffer::instance().emit("store i32 " + extendedVar + ", i32* " + llvmVarName);
+              } else {
+                  CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
+                  CodeBuffer::instance().emit("store " + llvmType + " " + $4->llvm_var + ", " + llvmType + "* " + llvmVarName);
+              }
+            }
 
           addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
           offsettStack->update_top_offset();
@@ -231,14 +240,20 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            delete $3;
          
        }
-          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement {CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);} M_ADD_WHILE_END
+          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement {CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->exp_startLabel);} M_ADD_WHILE_END
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
-           if(globalExp != $3) cout << "errrrrror ya m3alem" << endl;
-           
+           if(globalExp != $4) cout << "errrrrror ya m3alem" << endl;
           // CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);  // Jump back to start of loop
 
+           ExpNode* WhileExp = loopEntryLabels.top();
+          if (!loopEntryLabels.empty()) {
+          loopEntryLabels.pop();  // Remove the current loop's entry label
+          }
+          CodeBuffer::instance().emit("br label %" + WhileExp->next_label);
+          // CodeBuffer::instance().emit(WhileExp->false_label + ":");
+          CodeBuffer::instance().emit(WhileExp->next_label + ":");
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
            loopDepth--;
@@ -249,19 +264,27 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          | BREAK SC
          {
            checkBreakStatement(loopDepth, yylineno);
-           ExpNode* globalExp = globalExpStack.top();
-           CodeBuffer::instance().emit("br label %" + globalExp->false_label);
+           ExpNode* WhileExp = loopEntryLabels.top();
+          //  CodeBuffer::instance().emit("br label %" + WhileExp->false_label);
+           CodeBuffer::instance().emit("br label %" + WhileExp->next_label);
            printProductionRule(13);
          }
          ;
 
           | CONTINUE SC
          {
-           checkContinueStatement(loopDepth, yylineno);
-           ExpNode* globalExp = globalExpStack.top();
-           CodeBuffer::instance().emit("br label %" + globalExp->next_label); //check12
-           printProductionRule(14);
-         }
+          checkContinueStatement(loopDepth, yylineno);
+          if (!loopEntryLabels.empty()) {
+            // string currentLoopStart = loopEntryLabels.top();
+            ExpNode* WhileExp = loopEntryLabels.top();
+            CodeBuffer::instance().emit("br label %" + WhileExp->exp_startLabel);
+          } else {
+           // Handle error: continue outside of loop
+            output::errorUnexpectedContinue(yylineno);
+             exit(0);
+          }
+          printProductionRule(14);
+   }
          ;
 
 M_CHECK_WHILE_BOOL: %empty
@@ -276,6 +299,7 @@ M_CHECK_WHILE_BOOL: %empty
                     
                     if (!global_Exp->llvm_var.empty()) {
                      CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
+                    //  CodeBuffer::instance().emit("br i1 M_CHECK_WHILE_BOOL" + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
                     }
 
                   }
@@ -283,10 +307,12 @@ M_CHECK_WHILE_BOOL: %empty
 
 
 M_ADD_WHILE_START_LABEL: %empty {
-    string label = CodeBuffer::instance().freshLabel();
     // label= "while_entry";
-    CodeBuffer::instance().emit(label + ":");
-    $$ = new ExpNode("label", label);
+    $$ = new ExpNode("label");
+    CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->exp_startLabel); 
+    CodeBuffer::instance().emit(static_cast<ExpNode*>($$)->exp_startLabel + ":");
+    loopEntryLabels.push(static_cast<ExpNode*>($$));  // Push the label onto the stack
+    
 }
 ;
 
@@ -343,12 +369,28 @@ M_CHECK_IF_BOOL_andAddTrueLabel: %empty
                    exit(0);
                   }
                   if (!global_Exp->llvm_var.empty()) {
+                //  CodeBuffer::instance().emit("br i1 M_CHECK_IF_BOOL_andAddTrueLabel " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
                  CodeBuffer::instance().emit("br i1 " + global_Exp->llvm_var + ", label %" + global_Exp->true_label + ", label %" + global_Exp->false_label);
                   }
                   CodeBuffer::instance().emit(global_Exp->true_label + ":");
                   
                   globalExpStack.push(global_Exp);
                };
+
+// if it was a nested if then this would work but if it was only one if then it wont work so i added 
+// the branching commands in "exp relation exp" and "exp equality exp"
+/* try this input and see the difference
+if (not (5 == 4))
+    printi(1);
+else
+    printi(0);
+
+if (not (5 != 4))
+    if(1==1)
+      printi(1);
+else
+    printi(0);
+*/
 
 M_ADD_FALSE_LABEL: %empty
                  {
@@ -372,12 +414,17 @@ Call: ID LPAREN Exp RPAREN
     output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
     exit(0);
     }
-      string resultVar;
+      // string resultVar;
       string callInstr;
       bool extend = (funcName == "printi" && argType == "byte");
       string argLLVMType = (extend) ? "i32" : getLLVMType(argType);
-      
-    if (argType == "string") {
+      string resultVar = freshVar();
+    if (funcName == "readi") {
+        CodeBuffer::instance().emit(resultVar + " = call i32 @readi()");
+        $$ = new ExpNode("int", resultVar);
+      }
+    else{
+      if (argType == "string") {
            if (func->ret_type == "void"){
                 callInstr="call void @" + funcName + "(i8* getelementptr ([" 
                                     + to_string(static_cast<ExpNode*>($3)->string_length) 
@@ -386,7 +433,7 @@ Call: ID LPAREN Exp RPAREN
                                     + " x i8]* " + static_cast<ExpNode*>($3)->llvm_var 
                                     + ", i32 0, i32 0))";
            }else{
-                resultVar = freshVar();
+                // resultVar = freshVar();
                 callInstr=resultVar + " = call " +  getLLVMType(func->ret_type) + " @" + funcName + "(i8* getelementptr  ([" 
                                     + to_string(static_cast<ExpNode*>($3)->string_length) 
                                     + " x i8], [" 
@@ -407,7 +454,7 @@ Call: ID LPAREN Exp RPAREN
             callInstr += $3->llvm_var + ")";
           }
         } else {
-          resultVar = freshVar();
+          // resultVar = freshVar();
           callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + argLLVMType + " ";
           if (extend) {
             string extendedVar = freshVar();
@@ -417,6 +464,7 @@ Call: ID LPAREN Exp RPAREN
             callInstr += $3->llvm_var + ")";
           }
         }
+      }
     }
 
 
@@ -566,6 +614,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | NOT Exp 
      { 
+      
        checkBooleanExpression($2, *tableStack);
        $$ = new ExpNode("bool");
        emitBooleanNot(static_cast<ExpNode*>($2), static_cast<ExpNode*>($$));
@@ -573,6 +622,30 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        printProductionRule(28);
        global_exp_type = $$->type;
        global_Exp = static_cast<ExpNode*>($$);
+     /*
+       checkBooleanExpression($2, *tableStack);
+       $$ = new ExpNode("bool");
+       // Flip the true and false labels
+       static_cast<ExpNode*>($$)->true_label = static_cast<ExpNode*>($2)->false_label;
+       static_cast<ExpNode*>($$)->false_label = static_cast<ExpNode*>($2)->true_label;
+       // Use the same start label as the inner expression
+       static_cast<ExpNode*>($$)->exp_startLabel = static_cast<ExpNode*>($2)->exp_startLabel;  
+       // Add a conditional branch that flips the condition of the inner expression
+       string condVar = static_cast<ExpNode*>($2)->llvm_var;
+       if (!condVar.empty()) {
+         string notCondVar = freshVar();
+         CodeBuffer::instance().emit(notCondVar + " = xor i1 " + condVar + ", true");
+         CodeBuffer::instance().emit("br i1 " + notCondVar + ", label %" + 
+                                     static_cast<ExpNode*>($$)->true_label + ", label %" + 
+                                     static_cast<ExpNode*>($$)->false_label);
+       } else {
+         // If there's no condition variable, just flip the branch
+         CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->true_label);
+       }
+       printProductionRule(28);
+       global_exp_type = $$->type;
+       global_Exp = static_cast<ExpNode*>($$);
+      */
      }
   | Exp OR {CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->false_label + ":");} Exp 
     { 
@@ -602,6 +675,8 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);
        $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        static_cast<ExpNode*>($$)->exp_startLabel= static_cast<ExpNode*>($1)->exp_startLabel;
+       CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
+      //  CodeBuffer::instance().emit("br i1 equality" + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
        printProductionRule(31);
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);
@@ -612,6 +687,8 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        checkNumericExpression($3, *tableStack);
        $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        static_cast<ExpNode*>($$)->exp_startLabel= static_cast<ExpNode*>($1)->exp_startLabel;
+       CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
+      //  CodeBuffer::instance().emit("br i1 relational" + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
        printProductionRule(31);
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);

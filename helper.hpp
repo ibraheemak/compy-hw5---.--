@@ -86,52 +86,6 @@ if (le->type == "byte" && re->type == "byte") {
     }
 }
 
-
-/*
-void checkDivisionByZero(ExpNode* exp) { // it will be done at runtime
-    string checkZero =freshVar();
-    string exp_llvm_type=getLLVMType(exp->type);
-    CodeBuffer::instance().emit(checkZero + " = icmp eq " + exp_llvm_type + " " + exp->llvm_var + ", 0");
-
-    string label_Zero = CodeBuffer::instance().freshLabel();
-    string label_notZero = CodeBuffer::instance().freshLabel();
-//zero division
-    CodeBuffer::instance().emit("br i1 " + checkZero + ", label %" + label_Zero + ", label %" + label_notZero);
-    CodeBuffer::instance().emit( label_Zero + ":" );
-    CodeBuffer::instance().emit( "call i32 @printf(i8* getelementptr ([22 x i8], [22 x i8]* @.str_zeroDiv, i32 0, i32 0))" );
-    CodeBuffer::instance().emit("call void @exit(i32 1)");
-
-//no zero division
-    CodeBuffer::instance().emit(label_notZero + ":");
-}
-
-
-ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
-
-    checkDivisionByZero(re);
-    string result = freshVar();
-    string leVar = le->llvm_var;
-    string reVar = re->llvm_var;
-
-
-    if (le->type == "byte") {
-        leVar = promoteByteToInt(le);
-    } else if (re->type == "byte") {
-        reVar = promoteByteToInt(re);
-    }
-    
-    if (le->type == "int" && re->type == "int") {
-        CodeBuffer::instance().emit(result + " = sdiv i32 " + leVar + ", " + reVar);
-        return new ExpNode("int", result);
-    } else if (le->type == "byte" && re->type == "byte") {
-        CodeBuffer::instance().emit(result + " = udiv i32 " + leVar + ", " + reVar);
-       return truncateIntToByte(new ExpNode("int", result));
-    } else {
-        output::errorMismatch(yylineno);
-        exit(0);
-    }
-}
-*/
 ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
     string result = freshVar();
     string leVar = le->llvm_var;
@@ -155,7 +109,7 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
     
     // Division by zero case
     CodeBuffer::instance().emit(labelDivByZero + ":");
-    CodeBuffer::instance().emit("call void @print(i8* getelementptr inbounds ([22 x i8], [22 x i8]* @.str_zeroDiv, i32 0, i32 0))");
+    CodeBuffer::instance().emit("call void @print(i8* getelementptr inbounds ([23 x i8], [23 x i8]* @.str_zeroDiv, i32 0, i32 0))");
     CodeBuffer::instance().emit("call void @exit(i32 1)");
     CodeBuffer::instance().emit("unreachable");
     

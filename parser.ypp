@@ -231,16 +231,14 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            delete $3;
          
        }
-         | WHILE LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
+          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
            if(globalExp != $3) cout << "errrrrror ya m3alem" << endl;
            
+    CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);  // Jump back to start of loop
 
-           
-           
-           
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
            loopDepth--;
@@ -284,6 +282,12 @@ M_CHECK_WHILE_BOOL: %empty
                   ;
 
 
+M_ADD_WHILE_START_LABEL: %empty {
+    string label = CodeBuffer::instance().freshLabel();
+    CodeBuffer::instance().emit(label + ":");
+    $$ = new ExpNode("label", label);
+}
+;
 
 M_ADD_WHILE_TRUE_LABEL: %empty
                       {
@@ -673,35 +677,35 @@ void initBuiltInFunctions() {
     CodeBuffer::instance().emitGlobal("}");
 }
 
- int main(){
-     // yydebug = 1; 
-     CodeBuffer::instance().emit("define i32 @main(){");
-     CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
-     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
-     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
-     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
-      CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
+//  int main(){
+//      // yydebug = 1; 
+//      CodeBuffer::instance().emit("define i32 @main(){");
+//      CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
+//      CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
+//      CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
+//      CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
+//       CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
 
 
 
-     // defining the built in functions 
-     initBuiltInFunctions();
+//      // defining the built in functions 
+//      initBuiltInFunctions();
 
-     // yyparse
-     yyparse();
-          // yyparse
+//      // yyparse
+//      yyparse();
+//           // yyparse
 
-     exitScope(*tableStack);
+//      exitScope(*tableStack);
 
-     CodeBuffer::instance().emit("ret i32 0");
-     CodeBuffer::instance().emit("}");
+//      CodeBuffer::instance().emit("ret i32 0");
+//      CodeBuffer::instance().emit("}");
 
-     CodeBuffer::instance().printGlobalBuffer();
-     CodeBuffer::instance().printCodeBuffer();
+//      CodeBuffer::instance().printGlobalBuffer();
+//      CodeBuffer::instance().printCodeBuffer();
     
-     return 0;
+//      return 0;
 
- }
+//  }
 
 void yyerror(const char*){
     errorSyn(yylineno);

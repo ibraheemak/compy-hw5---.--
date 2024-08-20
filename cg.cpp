@@ -19,7 +19,7 @@ string CodeBuffer::freshLabel(){
 
 int CodeBuffer::emit(const string &s){
     buffer.push_back(s);
-//	cout << "DEBUG: Emitted: " << s << endl;
+	// cout << "DEBUG: Emitted: " << s << endl;
 	return buffer.size() - 1;
 }
 

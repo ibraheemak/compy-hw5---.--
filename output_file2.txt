@@ -1,0 +1,67 @@
+errrrrror ya m3alem
+declare i32 @printf(i8*, ...)
+declare void @exit(i32)
+declare i32 @scanf(i8*, ...)
+@.str_zeroDiv = internal constant [23 x i8] c"Error division by zero\00"
+@global_bool_flag = global i1 false
+@.str_specifier = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
+@.int_specifier = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@.int_specifier_scan = private unnamed_addr constant [3 x i8] c"%d\00", align 1
+define void @print(i8*) {
+  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.str_specifier, i32 0, i32 0
+  call i32 (i8*, ...) @printf(i8* %spec_ptr, i8* %0)
+  ret void
+}
+define void @printi(i32) {
+  %spec_ptr = getelementptr [4 x i8], [4 x i8]* @.int_specifier, i32 0, i32 0
+  call i32 (i8*, ...) @printf(i8* %spec_ptr, i32 %0)
+  ret void
+}
+define i32 @readi() {
+  %spec_ptr = getelementptr [3 x i8], [3 x i8]* @.int_specifier_scan, i32 0, i32 0
+  %num = alloca i32
+  call i32 (i8*, ...) @scanf(i8* %spec_ptr, i32* %num)
+  %result = load i32, i32* %num
+  ret i32 %result
+}
+@.t13 = internal constant [2 x i8] c"*\00"
+@.t17 = internal constant [2 x i8] c"*\00"
+define i32 @main(){
+entry_label:
+%t0 = add i8 0, 0
+%i = alloca i8
+store i8 %t0, i8* %i
+label_6:
+%t1 = load i8, i8* %i
+%t2 = add i32 0, 10
+%t4 = zext i8 %t1 to i32
+%t3 = icmp slt i32 %t4, %t2
+br i1 %t3, label %label_19, label %label_20
+label_19:
+%t5 = load i8, i8* %i
+%t6 = zext i8 %t5 to i32
+call void @printi(i32 %t6)
+%t7 = load i8, i8* %i
+%t8 = add i32 0, 1
+%t10 = zext i8 %t7 to i32
+%t9 = add i32 %t10, %t8
+%t11 = add i32 0, 10
+%t12 = icmp slt i32 %t9, %t11
+br i1 %t12, label %label_47, label %label_48
+label_47:
+call void @print(i8* getelementptr ([2 x i8], [2 x i8]* @.t13, i32 0, i32 0))
+br label %label_49
+label_48:
+br label %label_49
+label_49:
+%t14 = load i8, i8* %i
+%t15 = add i8 0, 1
+%t16 = add i8 %t14, %t15
+store i8 %t16, i8* %i
+br label %label_6
+label_20:
+br label %label_21
+label_21:
+call void @print(i8* getelementptr ([2 x i8], [2 x i8]* @.t17, i32 0, i32 0))
+ret i32 0
+}

@@ -1,7 +1,8 @@
-   byte i = 0b;
-    while (i < 10){
+    byte i = 0b;
+    while (i < 10) {
         printi(i);
-                if (i+1 < 10)
+        if (i+1 < 10)
             print("*");
-             i = i + 1b;
+        i = i + 1b;
     }
+    print("*");

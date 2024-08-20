@@ -66,12 +66,13 @@ ExpNode* emitArithmetic(const string& op, ExpNode* le, ExpNode* re) {//(le=left 
     string leVar = le->llvm_var;
     string reVar = re->llvm_var;
 if (le->type == "byte" && re->type == "byte") {
-       leVar=promoteByteToInt(le);
-       reVar=promoteByteToInt(re);
+    //    leVar=promoteByteToInt(le);
+    //    reVar=promoteByteToInt(re);
 
         CodeBuffer::instance().emit(result + " = " + op + " i8 " + leVar + ", " + reVar);
-        
-        return truncateIntToByte(new ExpNode("int", result));
+        return new ExpNode("byte", result);
+
+        // return truncateIntToByte(new ExpNode("int", result));
     } else {
         // One or both operands are int (i32), cast byte to int if necessary
         if (le->type == "byte") {

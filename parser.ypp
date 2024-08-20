@@ -165,7 +165,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            
            string varName = static_cast<IdentifierStr*>($1)->id;
            string llvmVarName = "%" + varName;
-           string varType = static_cast<TNode*>($1)->type;
+           string varType = static_cast<TNode*>($3)->type;
            string llvmType = getLLVMType(varType);
            string endlabel=CodeBuffer::instance().freshLabel();
 
@@ -231,13 +231,13 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            delete $3;
          
        }
-          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement M_ADD_WHILE_END
+          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement {CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);} M_ADD_WHILE_END
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
            if(globalExp != $3) cout << "errrrrror ya m3alem" << endl;
            
-    CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);  // Jump back to start of loop
+          // CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->llvm_var);  // Jump back to start of loop
 
            exitScope(*tableStack);
            offsettStack->pop_offset(yylineno);
@@ -284,42 +284,30 @@ M_CHECK_WHILE_BOOL: %empty
 
 M_ADD_WHILE_START_LABEL: %empty {
     string label = CodeBuffer::instance().freshLabel();
+    // label= "while_entry";
     CodeBuffer::instance().emit(label + ":");
     $$ = new ExpNode("label", label);
 }
 ;
 
-M_ADD_WHILE_TRUE_LABEL: %empty
-                      {
-                        ExpNode* globalExp = globalExpStack.top();
-                        CodeBuffer::instance().emit(globalExp->true_label + ":");
-                      }
-                      ;
+M_ADD_WHILE_TRUE_LABEL: %empty{
+        ExpNode* globalExp = globalExpStack.top();
+        CodeBuffer::instance().emit(globalExp->true_label + ":");
+  }
+  ;
 
-M_ADD_WHILE_END: %empty
-               {
-                 ExpNode* globalExp = globalExpStack.top();
-                 
-                 // Emit jump back to the condition check
-                
-                 CodeBuffer::instance().emit("br label %" + globalExp->exp_startLabel);
-                 
-                 // Emit the loop exit label (false label)
-                 CodeBuffer::instance().emit(globalExp->false_label + ":");
-                 
-                 // Create a new label for the code after the loop
-             //    string afterLoopLabel = CodeBuffer::instance().freshLabel();
-                 CodeBuffer::instance().emit("br label %" + globalExp->next_label); 
-                 CodeBuffer::instance().emit(globalExp->next_label + ":");
-                 
-                 // Update the ExpNode with the new labels
-            //     globalExp->next_label = afterLoopLabel;
-               //  globalExp->continue_label = conditionLabel; //check12
-                 
-                 // You might want to store these labels in a structure for nested loops
-                 // if you need to handle break and continue for multiple loop levels
-               }
-               ;
+M_ADD_WHILE_END: %empty{
+    ExpNode* globalExp = globalExpStack.top();
+
+    // ??who is label 14 and what is globalExp->exp_startLabel
+    //  CodeBuffer::instance().emit("br label %" + globalExp->exp_startLabel);
+    // Emit the loop exit label (false label)
+    CodeBuffer::instance().emit(globalExp->false_label + ":");
+    CodeBuffer::instance().emit("br label %" + globalExp->next_label); 
+    CodeBuffer::instance().emit(globalExp->next_label + ":");
+
+  }
+  ;
 
 CLOSE_SCOPE: %empty
            {
@@ -377,10 +365,8 @@ M_ADD_FALSE_LABEL: %empty
 Call: ID LPAREN Exp RPAREN
     {
       string funcName = static_cast<IdentifierStr*>($1)->id;
-      string argType = $3->type;  // This will be "int" in your example
+      string argType = $3->type; 
       vector<string> argTypes = {argType};
-      // changing checkFunctionCall
-      // $$ = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
       functions* func = checkFunctionCall(*tableStack, funcName, argTypes, yylineno);
      if (!isTypeCompatible(func->all_arg[0], $3->type)) {
     output::errorPrototypeMismatch(yylineno, funcName, output::makeFunctionType(func->all_arg[0], func->ret_type));
@@ -388,7 +374,9 @@ Call: ID LPAREN Exp RPAREN
     }
       string resultVar;
       string callInstr;
-
+      bool extend = (funcName == "printi" && argType == "byte");
+      string argLLVMType = (extend) ? "i32" : getLLVMType(argType);
+      
     if (argType == "string") {
            if (func->ret_type == "void"){
                 callInstr="call void @" + funcName + "(i8* getelementptr ([" 
@@ -410,12 +398,28 @@ Call: ID LPAREN Exp RPAREN
 
       //cout<<"$3->llvm_var = "<<$3->llvm_var<<endl; //debug
       if (func->ret_type == "void") {
-          callInstr = "call void @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
-      } else {
+          callInstr = "call void @" + funcName + "(" + argLLVMType + " ";
+          if (extend) {
+            string extendedVar = freshVar();
+            CodeBuffer::instance().emit(extendedVar + " = zext i8 " + $3->llvm_var + " to i32");
+            callInstr += extendedVar + ")";
+          } else {
+            callInstr += $3->llvm_var + ")";
+          }
+        } else {
           resultVar = freshVar();
-          callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + getLLVMType(argType) + " " + $3->llvm_var + ")";
-      }
+          callInstr = resultVar + " = call " + getLLVMType(func->ret_type) + " @" + funcName + "(" + argLLVMType + " ";
+          if (extend) {
+            string extendedVar = freshVar();
+            CodeBuffer::instance().emit(extendedVar + " = zext i8 " + $3->llvm_var + " to i32");
+            callInstr += extendedVar + ")";
+          } else {
+            callInstr += $3->llvm_var + ")";
+          }
+        }
     }
+
+
       CodeBuffer::instance().emit(callInstr);
       $$ = new ExpNode(func->ret_type, func->ret_type == "void" ? "" : resultVar);
      // cout<<$$->type<<endl; /////////////////////delete

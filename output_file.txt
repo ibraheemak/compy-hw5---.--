@@ -1,3 +1,30 @@
+DEBUG: Emitted: define i32 @main(){
+DEBUG: Emitted: entry_label:
+DEBUG: Emitted: %t0 = add i8 0, 0
+DEBUG: Emitted: %i = alloca i8
+DEBUG: Emitted: store i8 %t0, i8* %i
+DEBUG: Emitted: while_entry::
+DEBUG: Emitted: %t1 = load i8, i8* %i
+DEBUG: Emitted: %t2 = add i32 0, 10
+DEBUG: Emitted: %t4 = zext i8 %t1 to i32
+DEBUG: Emitted: %t3 = icmp slt i32 %t4, %t2
+DEBUG: Emitted: br i1 %t3, label %label_19, label %label_20
+DEBUG: Emitted: label_19:
+DEBUG: Emitted: %t5 = load i8, i8* %i
+DEBUG: Emitted: %t6 = add i8 0, 1
+DEBUG: Emitted: %t8 = zext i8 %t5 to i32
+DEBUG: Emitted: %t9 = zext i8 %t6 to i32
+DEBUG: Emitted: %t7 = add i8 %t8, %t9
+DEBUG: Emitted: %t10 = trunc i32 %t7 to i8
+DEBUG: Emitted: store bug at getLLVMType %t10, bug at getLLVMType* %i
+DEBUG: Emitted: br label %label_14
+DEBUG: Emitted: label_20:
+DEBUG: Emitted: br label %label_21
+DEBUG: Emitted: label_21:
+errrrrror ya m3alem
+DEBUG: Emitted: br label %while_entry:
+DEBUG: Emitted: ret i32 0
+DEBUG: Emitted: }
 declare i32 @printf(i8*, ...)
 declare void @exit(i32)
 declare i32 @scanf(i8*, ...)
@@ -23,40 +50,29 @@ define i32 @readi() {
   %result = load i32, i32* %num
   ret i32 %result
 }
-@.t11 = internal constant [2 x i8] c"*\00"
 define i32 @main(){
+entry_label:
+%t0 = add i8 0, 0
 %i = alloca i8
-store i8 , i8* %i
-%t0 = load i8, i8* %i
-%t1 = add i32 0, 10
-%t3 = zext i8 %t0 to i32
-%t2 = icmp slt i32 %t3, %t1
-label_14:
-br i1 %t2, label %label_11, label %label_12
-label_11:
-%t4 = load i8, i8* %i
-call void @printi(i8 %t4)
+store i8 %t0, i8* %i
+while_entry: // label_6
+%t1 = load i8, i8* %i // t1 = *i where i stores the value of the counter i on the stack
+%t2 = add i32 0, 10 // t2=10
+%t4 = zext i8 %t1 to i32 // so t4 is the 32 bit version of t1
+%t3 = icmp slt i32 %t4, %t2 // comparing 32bit of t4 and t2, t3=1 if t4 is still less than t2 meaning i<10
+br i1 %t3, label %label_19, label %label_20 // if t3=1 branch to label_19 else label_20
+label_19:
 %t5 = load i8, i8* %i
-%t6 = add i32 0, 1
+%t6 = add i8 0, 1
 %t8 = zext i8 %t5 to i32
-%t7 = add i32 %t8, %t6
-%t9 = add i32 0, 10
-%t10 = icmp slt i32 %t7, %t9
-br i1 %t10, label %label_33, label %label_34
-label_33:
-call void @print(i8* getelementptr ([2 x i8], [2 x i8]* @.t11, i32 0, i32 0))
-br label %label_35
-label_34:
-br label %label_35
-label_35:
-%t12 = load i8, i8* %i
-%t14 = zext i8 %t12 to i32
-%t15 = zext i8  to i32
-%t13 = add i8 %t14, %t15
-%t16 = trunc i32 %t13 to i8
-store bug at getLLVMType %t16, bug at getLLVMType* %i
-br label %label_55
-label_12:
-label_56:
+%t9 = zext i8 %t6 to i32
+%t7 = add i8 %t8, %t9 // !! why this happened? -> maybe if i fix t7 to i32 then this would work?
+%t10 = trunc i32 %t7 to i8 // !! 
+store bug at getLLVMType %t10, bug at getLLVMType* %i
+br label %label_14
+label_20:
+br label %label_21
+label_21:
+br label %while_entry:
 ret i32 0
 }

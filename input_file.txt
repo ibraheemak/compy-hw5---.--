@@ -1,17 +1,8 @@
+bool isPrime = true;
+int num = 10;
+int divisor = 2;
 
-	bool val=true;
-        if (val)
-		print("val is true");
-	else {
-		print("val is false");
-	}
+if (num / divisor * divisor == num and num != divisor){
+            printi(num);
+        }
 
-	if(true)
-    {
-        print("true");
-    }
-
-    if(false or false and  true)
-    {
-        print("true");
-    }

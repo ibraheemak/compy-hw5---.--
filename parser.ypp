@@ -553,7 +553,6 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        }
        CodeBuffer::instance().emit(resultVar + " = load " + llvmType + ", " + llvmType + "* " + llvmVarName);
        
-       
        printProductionRule(21);
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);
@@ -647,7 +646,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_Exp = static_cast<ExpNode*>($$);
       */
      }
-  | Exp OR {CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->false_label + ":");} Exp 
+  | Exp OR {CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($1)->false_label); CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->false_label + ":");} Exp 
     { 
       checkBooleanExpression($1, *tableStack);
       checkBooleanExpression($4, *tableStack);
@@ -659,7 +658,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
       global_exp_type = $$->type;
       global_Exp = static_cast<ExpNode*>($$);
     }
-    | Exp AND {CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->true_label + ":");} Exp 
+    | Exp AND {CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($1)->true_label); CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->true_label + ":");} Exp 
     { 
       checkBooleanExpression($1, *tableStack);
       checkBooleanExpression($4, *tableStack);

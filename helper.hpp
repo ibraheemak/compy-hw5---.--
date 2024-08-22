@@ -6,6 +6,7 @@
 #include "cg.hpp"
 #include "source.hpp"
 #include "hw3_output.hpp"
+#include "SymbolTable.hpp"
 using namespace std;
 extern int yylineno; 
 
@@ -194,6 +195,16 @@ ExpNode* emitRelop(const string& relop, ExpNode* le, ExpNode* re) {
     return new ExpNode("bool", resultVar);
 }
 
-
+//___________________________________________________________________
+string getSymbolLLVMVarName(TablesStack& tableStack, const string& varName) {
+    for (auto it = tableStack.stackTable.rbegin(); it != tableStack.stackTable.rend(); ++it) {
+        for (const auto& entry : (*it)->scope) {
+            if (entry->name == varName) {
+                return entry->llvmVarName;
+            }
+        }
+    }
+    return ""; // Return empty if not found
+}
 
 #endif

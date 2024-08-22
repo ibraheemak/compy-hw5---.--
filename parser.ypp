@@ -97,7 +97,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            string varName = static_cast<IdentifierStr*>($2)->id;
            string varType = static_cast<TNode*>($1)->type;
            string llvmType = getLLVMType(varType);
-           string llvmVarName = "%" + varName;
+           string llvmVarName = freshVar() +"_"+ varName;
            CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
            
            // Initialize with default value
@@ -108,7 +108,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            }
            
            checkVariableDeclaration(*tableStack, static_cast<IdentifierStr*>($2)->id, yylineno);
-           addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
+           addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno),llvmVarName);
            offsettStack->update_top_offset();
            delete static_cast<IdentifierStr*>($2);
            delete static_cast<TNode*>($1);
@@ -122,7 +122,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
           checkVariableDeclaration(*tableStack, varName, yylineno);
           checkAssignment(varType, expType, yylineno);
           string llvmType = getLLVMType(varType);
-          string llvmVarName = "%" + varName;
+          string llvmVarName =  freshVar() +"_"+ varName;
 
           if (varType == "bool" && static_cast<ExpNode*>($4)->llvm_var.empty()) {
               string allocLabel = CodeBuffer::instance().freshLabel();
@@ -138,10 +138,11 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
               CodeBuffer::instance().emit("br label %" + allocLabel);
 
               // Emit the alloc label
+              string tempFinalBool = freshVar();
               CodeBuffer::instance().emit(allocLabel + ":");
               CodeBuffer::instance().emit(llvmVarName + " = alloca " + llvmType);
-              CodeBuffer::instance().emit("%temp_bool = load i1, i1* @global_bool_flag");  // Or %bool_flag if using a local variable
-              CodeBuffer::instance().emit("store i1 %temp_bool, i1* " + llvmVarName);
+              CodeBuffer::instance().emit(tempFinalBool + " = load i1, i1* @global_bool_flag");
+              CodeBuffer::instance().emit("store i1 " + tempFinalBool + ", i1* " + llvmVarName);
           } else {
               // Handle direct expressions
               if (varType == "int" && expType == "byte") {
@@ -155,7 +156,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
               }
             }
 
-          addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno));
+          addSymbolToCurrentScope(*tableStack, varName, varType, offsettStack->top_offset(yylineno),llvmVarName);
           offsettStack->update_top_offset();
           delete static_cast<IdentifierStr*>($2);
           delete static_cast<TNode*>($1);
@@ -173,7 +174,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            checkAssignment(idType, $3->type, yylineno);
            
            string varName = static_cast<IdentifierStr*>($1)->id;
-           string llvmVarName = "%" + varName;
+           string llvmVarName = getSymbolLLVMVarName(*tableStack, varName);
            string varType = static_cast<TNode*>($3)->type;
            string llvmType = getLLVMType(varType);
            string endlabel=CodeBuffer::instance().freshLabel();
@@ -542,7 +543,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
          exit(0);
        }
        string llvmType = getLLVMType(varType);
-       string llvmVarName = "%" + varName;
+       string llvmVarName = getSymbolLLVMVarName(*tableStack, varName);
        string resultVar = freshVar();
        $$ = new ExpNode(varType,resultVar); //check12
        // Emit LLVM IR for loading variable value
@@ -621,6 +622,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        printProductionRule(28);
        global_exp_type = $$->type;
        global_Exp = static_cast<ExpNode*>($$);
+
+       if (!static_cast<ExpNode*>($2)->llvm_var.empty()) { //////////////////// must check this if else
+        CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($2)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->false_label + ", label %" + static_cast<ExpNode*>($$)->true_label);
+    } else {
+        CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->false_label);
+    }
      /*
        checkBooleanExpression($2, *tableStack);
        $$ = new ExpNode("bool");
@@ -757,35 +764,32 @@ void initBuiltInFunctions() {
     CodeBuffer::instance().emitGlobal("}");
 }
 
-//  int main(){
-//      // yydebug = 1; 
-//      CodeBuffer::instance().emit("define i32 @main(){");
-//      CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
-//      CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
-//      CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
-//      CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
-//       CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
+  int main(){
+      // yydebug = 1; 
+      CodeBuffer::instance().emit("define i32 @main(){");
+      CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
+      CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
+      CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
+      CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
+       CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
 
 
 
-//      // defining the built in functions 
-//      initBuiltInFunctions();
+    initBuiltInFunctions();
+    CodeBuffer::instance().emit("entry_label:");
+    yyparse();
 
-//      // yyparse
-//      yyparse();
-//           // yyparse
+      exitScope(*tableStack);
 
-//      exitScope(*tableStack);
+      CodeBuffer::instance().emit("ret i32 0");
+      CodeBuffer::instance().emit("}");
 
-//      CodeBuffer::instance().emit("ret i32 0");
-//      CodeBuffer::instance().emit("}");
-
-//      CodeBuffer::instance().printGlobalBuffer();
-//      CodeBuffer::instance().printCodeBuffer();
+      CodeBuffer::instance().printGlobalBuffer();
+      CodeBuffer::instance().printCodeBuffer();
     
-//      return 0;
+     return 0;
 
-//  }
+  }
 
 void yyerror(const char*){
     errorSyn(yylineno);

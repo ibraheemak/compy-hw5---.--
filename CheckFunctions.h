@@ -7,7 +7,7 @@
 // scope and symbol table management functions 
 void createNewScope(TablesStack& tableStack);
 void exitScope(TablesStack& tableStack);
-void addSymbolToCurrentScope(TablesStack& tableStack, const string& name, const string& type, int offset);
+void addSymbolToCurrentScope(TablesStack& tableStack, const string& name, const string& type, int offset,const string& llvmVarName);
 void addFunctionToGlobalScope(TablesStack& tableStack, const string& name, const string& returnType, const vector<string>& paramTypes);
 
 // type checking functions 

@@ -243,10 +243,10 @@ void createNewScope(TablesStack& tableStack) {
     ScopeBlock* newScope = tableStack.InsertTable(tableStack.stackTable.empty() ? nullptr : tableStack.stackTable.back());
     // No need to push to stackTable as InsertTable already does this
 }
-void addSymbolToCurrentScope(TablesStack& tableStack, const string& name, const string& type, int offset) {
+void addSymbolToCurrentScope(TablesStack& tableStack, const string& name, const string& type, int offset,const string& llvmVarName="") {
     if (!tableStack.stackTable.empty()) {
         ScopeBlock* currentScope = tableStack.stackTable.back();
-        tableStack.insert(currentScope, name, type, offset);
+        tableStack.insert(currentScope, name, type, offset,llvmVarName);
     }
 }
 

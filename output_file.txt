@@ -23,40 +23,11 @@ define i32 @readi() {
   %result = load i32, i32* %num
   ret i32 %result
 }
-@.t7 = internal constant [17 x i8] c"should not print\00"
 define i32 @main(){
 entry_label:
-%t0 = add i32 0, 20
-%k = alloca i32
-store i32 %t0, i32* %k
-br label %label_6
-label_6:
-%t1 = load i32, i32* %k
-%t2 = load i32, i32* %k
-%t3 = icmp eq i32 %t1, %t2
-br i1%t3, label %label_19, label %label_20
-br i1%t3, label %label_19, label %label_20
-label_19:
-%t4 = load i32, i32* %k
-%t5 = load i32, i32* %k
-%t6 = icmp ne i32 %t4, %t5
-// label 31 is true label there we should do the breaking out of the while and not the if
-// label 32 is false if, there we should jump to continue the while so label 37
-br i1%t6, label %label_31, label %label_32
-label_32:
-br label %label_31
-br label %label_37
-label_31:
-br label %label_37
-label_37:
-call void @print(i8* getelementptr ([17 x i8], [17 x i8]* @.t7, i32 0, i32 0))
-%t8 = load i32, i32* %k
-%t9 = add i32 0, 1
-%t10 = sub i32 %t8, %t9
-store i32 %t10, i32* %k
-br label %label_6
-label_20:
-br label %label_21
-label_21:
+%x_0 = alloca i32
+store i32 0, i32* %x_0
+%x_1 = alloca i32
+store i32 0, i32* %x_1
 ret i32 0
 }

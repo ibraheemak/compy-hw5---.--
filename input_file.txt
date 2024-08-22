@@ -1,8 +1,6 @@
-bool isPrime = true;
-int num = 10;
-int divisor = 2;
-
-if (num / divisor * divisor == num and num != divisor){
-            printi(num);
-        }
-
+{
+    int x;
+}
+{
+    int x;
+}

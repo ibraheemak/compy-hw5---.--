@@ -79,8 +79,9 @@ public:
     string name;
     string type;
     int offset;
-    tableEntry(const string& name, const string& type, int offset)
-        : name(name), type(type), offset(offset) {}
+    string llvmVarName;
+    tableEntry(const string& name, const string& type, int offset,const string& llvmVarName="")
+        : name(name), type(type), offset(offset),llvmVarName(llvmVarName) {}
     virtual ~tableEntry() {} // Add a virtual destructor
 };
 
@@ -128,8 +129,8 @@ public:
         return newScope;
     }
 
-    void insert(ScopeBlock* curScope, const string& name, const string& type, int offset) {
-        tableEntry* newEntry = new tableEntry(name, type, offset);
+    void insert(ScopeBlock* curScope, const string& name, const string& type, int offset, const string& llvmVarName="") {
+        tableEntry* newEntry = new tableEntry(name, type, offset, llvmVarName);
         curScope->scope.push_back(newEntry);
     }
     // !! check this

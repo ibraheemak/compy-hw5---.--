@@ -205,10 +205,12 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
          | Call SC { printProductionRule(8); }
          | RETURN SC 
          {
-           checkReturnStatement(*tableStack, "void", yylineno);
-           printProductionRule(9);
+              checkReturnStatement(*tableStack, "void", yylineno);
+              CodeBuffer::instance().emit("ret i32 0");
+              CodeBuffer::instance().emit("br label %func_end");
+              printProductionRule(9);
          }
-         | IF LPAREN Exp RPAREN  M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN M_EMIT_BRANCH M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
@@ -224,7 +226,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            printProductionRule(10);
            delete $3;
          }
-         | IF LPAREN Exp RPAREN M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE
+         | IF LPAREN Exp RPAREN M_EMIT_BRANCH M_CHECK_IF_BOOL_andAddTrueLabel M_NEW_SCOPE Statement CLOSE_SCOPE ELSE M_NEW_SCOPE M_ADD_FALSE_LABEL Statement CLOSE_SCOPE
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
@@ -241,7 +243,7 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
            delete $3;
          
        }
-          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement {CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->exp_startLabel);} M_ADD_WHILE_END
+          | WHILE M_ADD_WHILE_START_LABEL LPAREN  Exp RPAREN M_EMIT_BRANCH M_CHECK_WHILE_BOOL M_NEW_SCOPE_LOOP M_ADD_WHILE_TRUE_LABEL Statement {CodeBuffer::instance().emit("br label %" + ((ExpNode*)$2)->exp_startLabel);} M_ADD_WHILE_END
          {
            ExpNode* globalExp = globalExpStack.top();
            globalExpStack.pop();
@@ -287,6 +289,17 @@ Statement: LBRACE M_NEW_SCOPE Statements RBRACE
           printProductionRule(14);
    }
          ;
+
+M_EMIT_BRANCH: %empty
+    {
+        if(!static_cast<ExpNode*>($-1)->llvm_var.empty()){
+        CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($-1)->llvm_var + 
+            ", label %" + static_cast<ExpNode*>($-1)->true_label + 
+            ", label %" + static_cast<ExpNode*>($-1)->false_label);
+      }
+    }
+
+;
 
 M_CHECK_WHILE_BOOL: %empty
                   {
@@ -553,7 +566,9 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        CodeBuffer::instance().emit(static_cast<ExpNode*>($$)->exp_startLabel + ":");
        }
        CodeBuffer::instance().emit(resultVar + " = load " + llvmType + ", " + llvmType + "* " + llvmVarName);
-       
+        if (varType == "bool") {
+            CodeBuffer::instance().emit("br i1 " + resultVar + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
+        }
        printProductionRule(21);
        global_exp_type=$$->type;
        global_Exp=dynamic_cast<ExpNode*>($$);
@@ -624,7 +639,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_Exp = static_cast<ExpNode*>($$);
 
        if (!static_cast<ExpNode*>($2)->llvm_var.empty()) { //////////////////// must check this if else
-        CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($2)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->false_label + ", label %" + static_cast<ExpNode*>($$)->true_label);
+        string notCondVar = freshVar();
+         CodeBuffer::instance().emit(notCondVar + " = xor i1 " + static_cast<ExpNode*>($2)->llvm_var + ", true");
+         CodeBuffer::instance().emit("br i1 " + notCondVar + ", label %" + 
+                                     static_cast<ExpNode*>($$)->true_label + ", label %" + 
+                                     static_cast<ExpNode*>($$)->false_label);
+        // CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($2)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->false_label + ", label %" + static_cast<ExpNode*>($$)->true_label);
     } else {
         CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($$)->false_label);
     }
@@ -681,7 +701,7 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        checkTypeMismatch($1->type, $3->type, "equality", yylineno);
        $$ = emitRelop(static_cast<Relop*>($2)->op, static_cast<ExpNode*>($1),static_cast<ExpNode*>($3));
        static_cast<ExpNode*>($$)->exp_startLabel= static_cast<ExpNode*>($1)->exp_startLabel;
-       CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
+      //  CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
       //  CodeBuffer::instance().emit("br i1 equality" + static_cast<ExpNode*>($$)->llvm_var + ", label %" + static_cast<ExpNode*>($$)->true_label + ", label %" + static_cast<ExpNode*>($$)->false_label);
        printProductionRule(31);
        global_exp_type=$$->type;
@@ -764,32 +784,32 @@ void initBuiltInFunctions() {
     CodeBuffer::instance().emitGlobal("}");
 }
 
-  int main(){
-      // yydebug = 1; 
-      CodeBuffer::instance().emit("define i32 @main(){");
-      CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
-      CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
-      CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
-      CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
-       CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
+  // int main(){
+  //     // yydebug = 1; 
+  //     CodeBuffer::instance().emit("define i32 @main(){");
+  //     CodeBuffer::instance().emitGlobal("declare i32 @printf(i8*, ...)");
+  //     CodeBuffer::instance().emitGlobal("declare void @exit(i32)");
+  //     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
+  //     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
+  //      CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");
 
 
 
-    initBuiltInFunctions();
-    CodeBuffer::instance().emit("entry_label:");
-    yyparse();
+  //   initBuiltInFunctions();
+  //   CodeBuffer::instance().emit("entry_label:");
+  //   yyparse();
 
-      exitScope(*tableStack);
+  //     exitScope(*tableStack);
 
-      CodeBuffer::instance().emit("ret i32 0");
-      CodeBuffer::instance().emit("}");
+  //     CodeBuffer::instance().emit("ret i32 0");
+  //     CodeBuffer::instance().emit("}");
 
-      CodeBuffer::instance().printGlobalBuffer();
-      CodeBuffer::instance().printCodeBuffer();
+  //     CodeBuffer::instance().printGlobalBuffer();
+  //     CodeBuffer::instance().printCodeBuffer();
     
-     return 0;
+  //    return 0;
 
-  }
+  // }
 
 void yyerror(const char*){
     errorSyn(yylineno);

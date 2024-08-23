@@ -19,7 +19,7 @@ extern FILE* yyin;
 using namespace std;
 
 // Global instances
-/*
+
 int main(int argc, char* argv[]) {
     //for tests: std::cout << "Debug: Starting program execution" << std::endl;
     CodeBuffer::instance().emit("define i32 @main(){");
@@ -35,7 +35,9 @@ int main(int argc, char* argv[]) {
      initBuiltInFunctions();
     CodeBuffer::instance().emit("entry_label:");
     yyparse();
+    CodeBuffer::instance().emit("br label %func_end");
 
+    CodeBuffer::instance().emit("func_end:");
     CodeBuffer::instance().emit("ret i32 0");
     CodeBuffer::instance().emit("}");
 
@@ -50,4 +52,3 @@ int main(int argc, char* argv[]) {
     //for tests: std::cout << "Debug: Ending program execution" << std::endl;
     return 0;
 }
-*/

@@ -503,10 +503,6 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      { 
        checkNumericExpression($1, *tableStack);
        checkNumericExpression($3, *tableStack);
-      // string type1 = $1->type;
-      // string type2 = $3->type;
-      //for tests: cout << type1 <<endl;
-      // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
        printProductionRule(20);
       
        if(static_cast<Binop*>($2)->op=="+"){
@@ -523,20 +519,9 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | Exp multiplicative Exp 
      { 
-       checkNumericExpression($1, *tableStack);
-       checkNumericExpression($3, *tableStack);
-      // string type1 = $1->type;
-      // string type2 = $3->type;
-      // $$ = new ExpNode(type1 == "int" || type2 == "int" ? "int" : "byte");
-       printProductionRule(20);
-
-      //  if(static_cast<Binop*>($2)->op=="*"){
-      //   $$=emitArithmetic("mul",dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-      //  }
-       
-      //  if(static_cast<Binop*>($2)->op=="/"){
-      //   $$=emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
-      //  }
+      checkNumericExpression($1, *tableStack);
+      checkNumericExpression($3, *tableStack);
+      printProductionRule(20);
       if(static_cast<Binop*>($2)->op=="/"){
         $$ = emitDivision(dynamic_cast<ExpNode*>($1), dynamic_cast<ExpNode*>($3));
       } else if(static_cast<Binop*>($2)->op=="*"){
@@ -589,12 +574,12 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
          output::errorByteTooLarge(yylineno, to_string(value));
          exit(0);
        }
-       $$ = new ExpNode("byte");
-       $$->llvm_var = freshVar();
-       CodeBuffer::instance().emit($$->llvm_var + " = add i8 0, " + to_string(static_cast<Num*>($1)->num));
+       string resultVar = freshVar();
+       CodeBuffer::instance().emit(resultVar + " = trunc i32 " + to_string(value) + " to i8");
+       $$ = new ExpNode("byte", resultVar);
        printProductionRule(24);
-       global_exp_type=$$->type;
-       global_Exp=dynamic_cast<ExpNode*>($$);
+       global_exp_type = $$->type;
+       global_Exp = dynamic_cast<ExpNode*>($$);
      }
    | STRING { 
     
@@ -629,7 +614,6 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    | NOT Exp 
      { 
-      
        checkBooleanExpression($2, *tableStack);
        $$ = new ExpNode("bool");
        emitBooleanNot(static_cast<ExpNode*>($2), static_cast<ExpNode*>($$));
@@ -673,23 +657,29 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
        global_Exp = static_cast<ExpNode*>($$);
       */
      }
-  | Exp OR {CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($1)->false_label); CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->false_label + ":");} Exp 
+  | Exp OR M_or_branching Exp 
     { 
       checkBooleanExpression($1, *tableStack);
       checkBooleanExpression($4, *tableStack);
       // maybe i shoudlve let the function return a new node so we wont create unnecessary labels 
       $$ = new ExpNode("bool");
+      if(static_cast<ExpNode*>($4)->isrelop == true)
+      {CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($4)->llvm_var + ", label %" + static_cast<ExpNode*>($4)->true_label + ", label %" + static_cast<ExpNode*>($4)->false_label);}
+        
       emitBooleanOr(static_cast<ExpNode*>($1), static_cast<ExpNode*>($4), static_cast<ExpNode*>($$));
       static_cast<ExpNode*>($$)->exp_startLabel= static_cast<ExpNode*>($1)->exp_startLabel;
       printProductionRule(30);
       global_exp_type = $$->type;
       global_Exp = static_cast<ExpNode*>($$);
     }
-    | Exp AND {CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($1)->true_label); CodeBuffer::instance().emit(static_cast<ExpNode*>($1)->true_label + ":");} Exp 
+    | Exp AND M_And_branching Exp 
     { 
       checkBooleanExpression($1, *tableStack);
       checkBooleanExpression($4, *tableStack);
       $$ = new ExpNode("bool");
+      if(static_cast<ExpNode*>($4)->isrelop == true)
+        {CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($4)->llvm_var + ", label %" + static_cast<ExpNode*>($4)->true_label + ", label %" + static_cast<ExpNode*>($4)->false_label);}
+        
       emitBooleanAnd(static_cast<ExpNode*>($1), static_cast<ExpNode*>($4), static_cast<ExpNode*>($$));
       static_cast<ExpNode*>($$)->exp_startLabel= static_cast<ExpNode*>($1)->exp_startLabel;
       printProductionRule(29);
@@ -751,7 +741,21 @@ Exp: LPAREN Exp RPAREN { $$ = $2; printProductionRule(19); global_exp_type=$$->t
      }
    ;
 
- 
+M_or_branching: %empty
+{
+    if(static_cast<ExpNode*>($-1)->isrelop == true)
+    {CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($-1)->llvm_var + ", label %" + static_cast<ExpNode*>($-1)->true_label + ", label %" + static_cast<ExpNode*>($-1)->false_label);}
+    CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($-1)->false_label); 
+    CodeBuffer::instance().emit(static_cast<ExpNode*>($-1)->false_label + ":");
+    } 
+
+M_And_branching: %empty
+{
+        if(static_cast<ExpNode*>($-1)->isrelop == true)
+        {CodeBuffer::instance().emit("br i1 " + static_cast<ExpNode*>($-1)->llvm_var + ", label %" + static_cast<ExpNode*>($-1)->true_label + ", label %" + static_cast<ExpNode*>($-1)->false_label);}
+        CodeBuffer::instance().emit("br label %" + static_cast<ExpNode*>($-1)->true_label);
+          CodeBuffer::instance().emit(static_cast<ExpNode*>($-1)->true_label + ":");
+      } 
 
 %%
 

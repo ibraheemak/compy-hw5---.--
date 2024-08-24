@@ -57,6 +57,7 @@ bool isTypeCompatible(const string& type1, const string& type2,bool explicitCast
     }
     // byte can be assigned to int, but not vice versa
     if (type1 == "byte" && type2 == "int") {
+        // cout<< "AAAAAAAAAAAAAAa"<<endl;
         return false;
     }
     // Handle explicit casting

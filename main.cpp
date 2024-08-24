@@ -28,7 +28,8 @@ int main(int argc, char* argv[]) {
     CodeBuffer::instance().emitGlobal("declare i32 @scanf(i8*, ...)");
     CodeBuffer::instance().emitGlobal("@.str_zeroDiv = internal constant [23 x i8] c\"Error division by zero\\00\"");
     CodeBuffer::instance().emitGlobal("@global_bool_flag = global i1 false");    
-
+    CodeBuffer::instance().emitGlobal("@global_bool_relop = global i1 false");    
+    
     
 
     // Run the parser

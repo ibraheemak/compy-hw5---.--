@@ -112,11 +112,13 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
     string result = freshVar();
     string leVar = le->llvm_var;
     string reVar = re->llvm_var;
+    string resultType = (le->type == "int" || re->type == "int") ? "int" : "byte";
 
-    if (le->type == "byte") {
+    // Promote to int if necessary
+    if (le->type == "byte" && resultType == "int") {
         leVar = promoteByteToInt(le);
     }
-    if (re->type == "byte") {
+    if (re->type == "byte" && resultType == "int") {
         reVar = promoteByteToInt(re);
     }
     
@@ -125,7 +127,8 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
     string labelDivByZero = CodeBuffer::instance().freshLabel();
     string labelSafeDiv = CodeBuffer::instance().freshLabel();
     
-    CodeBuffer::instance().emit(checkZero + " = icmp eq i32 " + reVar + ", 0");
+    string checkType = (resultType == "int") ? "i32" : "i8";
+    CodeBuffer::instance().emit(checkZero + " = icmp eq " + checkType + " " + reVar + ", 0");
     CodeBuffer::instance().emit("br i1 " + checkZero + ", label %" + labelDivByZero + ", label %" + labelSafeDiv);
     
     // Division by zero case
@@ -136,11 +139,14 @@ ExpNode* emitDivision(ExpNode* le, ExpNode* re) {
     
     // Safe division case
     CodeBuffer::instance().emit(labelSafeDiv + ":");
-    CodeBuffer::instance().emit(result + " = sdiv i32 " + leVar + ", " + reVar);
+    if (resultType == "int") {
+        CodeBuffer::instance().emit(result + " = sdiv i32 " + leVar + ", " + reVar);
+    } else {
+        CodeBuffer::instance().emit(result + " = udiv i8 " + leVar + ", " + reVar);
+    }
 
-    return new ExpNode("int", result);
+    return new ExpNode(resultType, result);
 }
-
 //_________________________________________boolean_________________________________________
 
 

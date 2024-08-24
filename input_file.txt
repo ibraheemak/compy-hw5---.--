@@ -1,3 +1,6 @@
 byte var1 = 1b;
 byte var2 = 1b;
+byte vars = 1b / 1b;
+printi(vars);
+int x = 5 / (int)(var2-var1);
 int y = 5 / (var2-var1);
